@@ -1,7 +1,7 @@
 from criteria_registry import Criterion, CRITERIA
 from schemas import EssayState
 from utils import count_words, extract_paragraphs, normalize_text
-from models import model, structured_model, calibration_model
+from models import model, structured_model
 
 def metadata_node(state: EssayState):
 
@@ -36,14 +36,14 @@ def build_evaluator(criterion: Criterion):
         meta = state["metadata"]
 
         prompt = f"""
-You are a UPSC examiner evaluating an essay written under timed exam conditions.
+You are a strict UPSC examiner evaluating an essay written under timed exam conditions.
 
 Criterion: {name}
 
 Focus:
 {instruction}
 
-Scoring rubric:
+Rating rubric:
 {rubric}
 
 Essay metadata:
@@ -51,14 +51,34 @@ Essay metadata:
 - Paragraph count: {meta['paragraph_count']}
 - Average paragraph length: {meta['avg_paragraph_words']} words
 
+
 Evaluation Guidelines:
-- Evaluate relative to what is expected from a full-length UPSC essay.
-- Assign a score from 0-10 based strictly on the rubric bands.
-- Strong paragraph-level writing must not be mistaken for essay-level quality.
-- High scores require sustained development across the essay.
-- Provide up to 3 strengths.
-- Provide up to 3 weaknesses (leave empty if score is 10).
+
+- Choose ONE rating only from:
+  **Excellent, Good, Average, Poor**
+
+- Do NOT hedge between ratings.
+- If uncertain, choose the lower rating.
+- Do not reward basic competence — reward clear distinction.
+- Evaluate relative to expectations from a full-length UPSC essay.
+- Strong paragraph-level writing must NOT be mistaken for essay-level quality.
+- High ratings require sustained development across the essay.
+
+Feedback Requirements:
+
 - Write concise examiner-style feedback (2-3 sentences).
+- Explicitly justify why the essay belongs in this rating instead of the rating above it.
+
+Strength / Weakness Requirements:
+
+- No Strength if rating is Poor.
+- No Weakness if rating is Excellent.
+- At least 2 Strengths for Good or Excellent ratings.
+- At least 2 Weaknesses for Average or Poor ratings.
+- Each point must reference a specific observable trait in the essay.
+- Avoid generic phrases like "good analysis."
+- Weaknesses must have a corrective actionable advice.
+
 
 Essay Topic:
 {topic}
@@ -73,72 +93,15 @@ Essay:
             "evaluations": {
                 key: response
             },
-            "scores": [response.score]
+            "ratings": [response.rating]
         }
 
     return evaluator
-
-def calibration_node(state: EssayState):
-
-    evaluations = state["evaluations"]
-    essay = state["essay"]
-
-    word_count = state["metadata"]["word_count"]
-    paragraph_count = state["metadata"]["paragraph_count"]
-
-    score_map = {
-        k: v.score for k, v in evaluations.items()
-    }
-
-    prompt = f"""
-You are moderating scores assigned by examiners to ensure they are proportionate to a UPSC essay.
-
-Typical UPSC essays are 900-1200 words with multiple developed paragraphs.
-
-Essay metadata:
-- Word count: {word_count}
-- Paragraphs: {paragraph_count}
-
-Essay:
-{essay}
-
-Current scores:
-{score_map}
-
-Task:
-Adjust scores ONLY if they appear inflated relative to essay scale,
-development, or completeness.
-
-Guidelines:
-- Short or underdeveloped responses should not receive high bands.
-- Strong paragraph-level writing should not be mistaken for essay-level quality.
-- Do NOT increase scores — only reduce inflated ones if necessary.
-- Preserve relative differences between criteria when possible.
-
-Return adjusted scores and a brief rationale.
-"""
-
-    result = calibration_model.invoke(prompt)
-
-    # overwrite scores safely
-    for item in result.adjusted_scores:
-        if item.criterion not in evaluations.keys():
-            continue  
-        evaluations[item.criterion].score = item.score
-
-
-    return {
-        "evaluations": evaluations,
-        "calibration_rationale": result.rationale
-    }
 
 def overall_evaluation(state: EssayState):
 
     evaluations = state["evaluations"]
     metadata = state["metadata"]
-
-    # ALWAYS compute total here
-    total_score = sum(e.score for e in evaluations.values())
 
     # Build dynamic evaluation summary
     evaluation_block = ""
@@ -148,7 +111,7 @@ def overall_evaluation(state: EssayState):
 
         evaluation_block += f"""
 {criterion.name}:
-Score: {e.score}/10
+Rating: {e.rating}
 Strengths: {e.strengths}
 Weaknesses: {e.weaknesses}
 Feedback: {e.feedback}
@@ -169,8 +132,6 @@ Essay Topic:
 Criterion-wise evaluation:
 {evaluation_block}
 
-Total Score: {total_score} / 50
-
 Write a professional final assessment that:
 
 - Synthesizes the major strengths.
@@ -189,5 +150,4 @@ Write in cohesive paragraphs.
 
     return {
         "overall": overall_feedback,
-        "total_score": total_score
     }

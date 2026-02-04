@@ -1,13 +1,10 @@
 from pydantic import BaseModel, Field
-from typing import TypedDict, Annotated
-import operator
+from typing import Literal, TypedDict, Annotated
 
 
 class EvaluationSchema(BaseModel):
-    score: int = Field(
-        ge=0,
-        le=10,
-        description="Score awarded for this criterion on a 0-10 scale."
+    rating: Literal["Excellent", "Good", "Average", "Poor"] = Field(
+        description="Overall rating for this criterion based strictly on the rubric."
     )
 
     strengths: list[str] = Field(
@@ -35,13 +32,3 @@ class EssayState(TypedDict):
     metadata: EssayMetadata
     evaluations: Annotated[dict[str, EvaluationSchema], lambda a, b: {**a, **b}]
     overall: str
-    scores: Annotated[list[int], operator.add]
-    total_score: int
-
-class AdjustedScore(BaseModel):
-    criterion: str
-    score: int = Field(ge=0, le=10)
-
-class CalibrationResult(BaseModel):
-    adjusted_scores: list[AdjustedScore]
-    rationale: str

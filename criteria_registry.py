@@ -13,20 +13,35 @@ CRITERIA: tuple[Criterion, ...] = (
     Criterion(
         key="topic_relevance",
         name="Topic Relevance",
-        instruction="""
-Evaluate how accurately the essay interprets the topic and sustains focus on it across the entire essay.
+        instruction = """
+Evaluate whether the essay directly responds to the given topic.
+
+FIRST perform an Off-Topic Check:
+
+Ask:
+- Would a human examiner immediately recognize this as a response to the prompt?
+- Is the core subject of the essay the same as the topic?
+
+If the essay primarily discusses a different subject, it is OFF-TOPIC.
+
+IMPORTANT RULE:
+An off-topic essay MUST be rated Poor.
+Do NOT assign Average for partial philosophical overlap or abstract connections.
+
+Topic relevance requires SUBJECT MATCH, not thematic creativity.
+Do not infer relevance unless it is explicit and central.
 """,
-        rubric="""
-9-10: Precisely interprets the topic and sustains sharp relevance throughout a fully developed essay.
+        rubric = """
+Excellent: Directly and precisely answers the topic. The central theme is unmistakably aligned with the prompt, and nearly every major idea reinforces it.
 
-7-8: Largely relevant with minor digressions; demonstrates clear understanding of the topic.
+Good: Clearly relevant to the topic. The essay demonstrates a solid understanding of the prompt, with only minor generalisation that does not weaken alignment.
 
-5-6: Broadly related but shows drift, generalisation, or inconsistent linkage to the topic.
+Average: Broadly related but somewhat generic. The essay could fit multiple similar topics with moderate changes, indicating partial but not sharp interpretation.
 
-3-4: Partial relevance; misunderstands important aspects of the topic.
-
-0-2: Misinterprets the topic or does not resemble an essay response.
+Poor: Weak, superficial, or minimal connection to the topic. Large portions drift away from the prompt, or the response could easily belong to a different question.
 """
+
+
     ),
 
     Criterion(
@@ -36,17 +51,16 @@ Evaluate how accurately the essay interprets the topic and sustains focus on it 
 Evaluate the intellectual maturity, analytical depth, and originality demonstrated across the essay.
 Reward sustained reasoning rather than isolated good points.
 """,
-        rubric="""
-9-10: Demonstrates sustained, nuanced, and original reasoning across a fully developed essay.
+        rubric = """
+Excellent: Demonstrates mature, nuanced, and sustained reasoning. Ideas are explored rather than merely stated, showing clear intellectual engagement.
 
-7-8: Logical and balanced analysis with some depth, though largely predictable.
+Good: Logical and clear analysis with some depth, though insights may be predictable rather than original.
 
-5-6: Basic arguments with limited analytical development.
+Average: Relies on straightforward or familiar arguments with limited exploration or analytical development.
 
-3-4: Superficial, descriptive, or repetitive thinking.
-
-0-2: Extremely shallow response or fragmented content that does not resemble an essay.
+Poor: Superficial, repetitive, or largely descriptive thinking with little evidence of reasoning.
 """
+
     ),
 
     Criterion(
@@ -58,17 +72,16 @@ Check for introduction, logical body progression, paragraphing, coherence, and c
 Responses that do not resemble an essay should fall in the lowest bands regardless of language quality.
 Local paragraph coherence should not be mistaken for essay-level structure.
 """,
-        rubric="""
-9-10: Exceptionally well-structured essay with a clear introduction, multiple logically ordered paragraphs, smooth transitions, and a strong conclusion.
+        rubric = """
+Excellent: Functions as a cohesive essay with a clear introduction, logically ordered paragraphs, smooth progression of ideas, and a purposeful conclusion.
 
-7-8: Well-organized essay with minor structural lapses.
+Good: Well-organized overall with recognizable essay structure, though transitions or balance may occasionally falter.
 
-5-6: Recognizable essay structure but uneven development or weak transitions.
+Average: Shows basic essay structure but development is uneven, with weak progression or limited paragraph control.
 
-3-4: Major structural deficiencies such as missing introduction, missing conclusion, or very limited paragraphing.
-
-0-2: Does not resemble an essay (e.g., single paragraph, notes, or fragment).
+Poor: Does not function as a proper essay — major structural elements are missing or ideas appear disjointed.
 """
+
     ),
 
     Criterion(
@@ -78,17 +91,16 @@ Local paragraph coherence should not be mistaken for essay-level structure.
 Evaluate the breadth of perspectives explored in the essay.
 Reward meaningful integration of multiple dimensions rather than token mentions.
 """,
-        rubric="""
-9-10: Explores multiple dimensions (social, political, economic, ethical, etc.) in an integrated manner across the essay.
+        rubric = """
+Excellent: Integrates multiple relevant dimensions (e.g., social, ethical, philosophical, economic) in a natural and connected manner.
 
-7-8: Covers several relevant dimensions but with uneven depth.
+Good: Covers several perspectives but with uneven emphasis or depth.
 
-5-6: Limited dimensional exploration; relies heavily on one perspective.
+Average: Demonstrates limited breadth and relies primarily on a single perspective.
 
-3-4: Largely one-dimensional.
-
-0-2: Extremely narrow response or insufficient content to demonstrate dimensional thinking.
+Poor: Extremely narrow response with little to no evidence of dimensional thinking.
 """
+
     ),
 
     Criterion(
@@ -97,16 +109,14 @@ Reward meaningful integration of multiple dimensions rather than token mentions.
         instruction="""
 Evaluate the specificity, relevance, and integration of examples used to support arguments throughout the essay.
 """,
-        rubric="""
-9-10: Uses precise, relevant examples seamlessly throughout the essay to strengthen arguments.
+        rubric = """
+Excellent: Uses specific, relevant examples that are smoothly integrated and clearly strengthen the arguments.
 
-7-8: Provides relevant examples but integration may be inconsistent.
+Good: Provides appropriate examples, though integration may occasionally feel mechanical or uneven.
 
-5-6: Examples are generic, sparse, or unevenly used.
+Average: Examples are generic, sparse, or not consistently connected to the argument.
 
-3-4: Few weak examples or largely unsupported claims.
-
-0-2: No meaningful examples or insufficient content to demonstrate evidence-based writing.
+Poor: Lacks meaningful examples or relies on unsupported assertions.
 """
     ),
 )

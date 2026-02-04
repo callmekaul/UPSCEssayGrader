@@ -44,13 +44,11 @@ if st.button("Evaluate Essay"):
 
 
     # ---------- Display Results ----------
-    st.success(f"Total Score: {result['total_score']} / 50")
-
     st.divider()
 
     for key, evaluation in result["evaluations"].items():
 
-        with st.expander(f"{key.replace('_',' ').title()} — {evaluation.score}/10"):
+        with st.expander(f"{key.replace('_',' ').title()} — {evaluation.rating}"):
 
             st.markdown("**Strengths**")
             for s in evaluation.strengths:
