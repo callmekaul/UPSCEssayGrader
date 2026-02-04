@@ -1,3 +1,5 @@
+from collections import Counter
+from pydoc import html
 import re
 from criteria_registry import CRITERIA
 
@@ -16,56 +18,234 @@ def extract_paragraphs(text: str) -> list[str]:
 def count_words(text: str) -> int:
         return len(re.findall(r"\b\w+\b", text))
 
+def resolve_annotations(text, annotations):
+
+    resolved = []
+
+    for ann in annotations:
+
+        quote = ann.get("quote")
+
+        if not quote:
+            continue
+
+        start = text.find(quote)
+
+        if start == -1:
+            continue  # discard hallucination safely
+
+        resolved.append({
+            "start": start,
+            "end": start + len(quote),
+            **ann
+        })
+
+    return resolved
+
+def render_annotated_essay(text, annotations):
+    """
+    Clean, formatting-safe annotation renderer.
+    No layout breakage. Dark-mode visible.
+    """
+
+    html_text = text
+
+    # reverse order = offset safe
+    annotations = sorted(
+        annotations,
+        key=lambda x: x["start"],
+        reverse=True
+    )
+
+    for ann in annotations:
+
+        start = ann["start"]
+        end = ann["end"]
+
+        snippet = html_text[start:end]
+
+        if not snippet.strip():
+            continue
+
+        # Escape tooltip text safely
+        message = html.escape(ann.get("message", ""))
+        suggestions = ", ".join(ann.get("suggestions", []))
+        suggestions = html.escape(suggestions)
+
+        tooltip = message
+        if suggestions:
+            tooltip += f" | Suggestions: {suggestions}"
+
+        # Strong, visible colors for dark mode
+        if ann["type"] == "grammar":
+            bg = "#8b0000"      # dark red
+            underline = "#ff4d4d"
+
+        elif ann["type"] == "weak_argument":
+            bg = "#8b6f00"      # dark amber
+            underline = "#ffd54f"
+
+        elif ann["type"] == "strong_argument":
+            bg = "#0b5d1e"      # dark green
+            underline = "#4caf50"
+
+        else:
+            bg = "#444"
+            underline = "#aaa"
+
+        span = (
+            f'<span '
+            f'style="'
+            f'background-color:{bg};'
+            f'color:white;'
+            f'padding:1px 3px;'
+            f'border-bottom:2px solid {underline};'
+            f'border-radius:3px;'
+            f'cursor:help;" '
+            f'title="{tooltip}">'
+            f'{snippet}'
+            f'</span>'
+        )
+
+        html_text = html_text[:start] + span + html_text[end:]
+
+    # Preserve paragraph structure
+    return html_text.replace("\n", "<br>")
+
 def pretty_print(result: dict):
 
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 80)
     print("📝 UPSC ESSAY EVALUATION REPORT")
-    print("=" * 70)
+    print("=" * 80)
 
-    # ---------- Essay ----------
-    print("\n📄 ESSAY:\n")
-    print(result["essay"])
+    # =====================================================
+    # METADATA
+    # =====================================================
 
-    print("\n" + "-" * 70)
-    print("📊 DIMENSION-WISE EVALUATION")
-    print("-" * 70)
+    meta = result.get("metadata", {})
+
+    print("\n📊 ESSAY METADATA")
+    print("-" * 80)
+
+    print(f"Word Count        : {meta.get('word_count', 'N/A')}")
+    print(f"Paragraphs        : {meta.get('paragraph_count', 'N/A')}")
+    print(f"Avg Para Length   : {meta.get('avg_paragraph_words', 'N/A')}")
+
+    # =====================================================
+    # CRITERION RATINGS
+    # =====================================================
 
     evaluations = result["evaluations"]
 
+    print("\n📊 CRITERION ANALYSIS")
+    print("-" * 80)
+
     for i, criterion in enumerate(CRITERIA, start=1):
 
-        eval_obj = evaluations[criterion.key]
+        e = evaluations[criterion.key]
 
-        print(f"\n{i}️⃣ {criterion.name.upper()} ({eval_obj.score}/10)")
+        print(f"{i}. {criterion.name:<30} → {e.rating}")
+        print(f"   {e.feedback}\n")
 
-        # ---------- Strengths ----------
-        if eval_obj.strengths:
-            print("\n✅ Strengths:")
-            for s in eval_obj.strengths:
-                print(f"  • {s}")
+    # =====================================================
+    # GLOBAL STRENGTHS / WEAKNESSES
+    # =====================================================
 
-        # ---------- Weaknesses ----------
-        if eval_obj.weaknesses:
-            print("\n⚠️ Weaknesses:")
-            for w in eval_obj.weaknesses:
-                print(f"  • {w}")
+    strengths = result.get("strengths", [])
+    weaknesses = result.get("weaknesses", [])
 
-        # ---------- Feedback ----------
-        print("\n🧾 Examiner Feedback:")
-        print(f"  {eval_obj.feedback}")
+    print("\n✅ OVERALL STRENGTHS")
+    print("-" * 80)
 
-        print("\n" + "-" * 70)
+    if strengths:
+        for s in strengths:
+            print(f"• {s}")
+    else:
+        print("None detected.")
 
-    # ---------- Overall ----------
-    print("\n🧠 OVERALL ASSESSMENT")
-    print("-" * 70)
-    print(result["overall"])
+    print("\n⚠️ OVERALL WEAKNESSES")
+    print("-" * 80)
 
-    print("\n" + "=" * 70)
-    print(f"🏁 TOTAL SCORE: {result['total_score']} / 50")
-    print("=" * 70 + "\n")
+    if weaknesses:
+        for w in weaknesses:
+            print(f"• {w}")
+    else:
+        print("None detected.")
 
-    print(f"Word Count: {result['metadata']['word_count']}")
-    print(f"Paragraph Count: {result['metadata']['paragraph_count']}")
-    print(f"Average Paragraph Length: {result['metadata']['avg_paragraph_words']} words")
-    
+    # =====================================================
+    # FINAL ASSESSMENT
+    # =====================================================
+
+    print("\n🧠 FINAL EXAMINER REPORT")
+    print("-" * 80)
+    print(result.get("overall", "No overall feedback."))
+
+    # =====================================================
+    # ANNOTATION INTELLIGENCE
+    # =====================================================
+
+    annotations = result.get("annotations", [])
+    essay = result.get("essay", "")
+
+    print("\n🔎 ANNOTATION INTELLIGENCE")
+    print("-" * 80)
+
+    print(f"Total Annotations: {len(annotations)}")
+
+    if essay:
+        words = max(len(essay.split()), 1)
+        density = len(annotations) / words * 1000
+        print(f"Annotation Density: {density:.2f} per 1000 words")
+
+    # ---------- Type Distribution ----------
+    if annotations:
+
+        types = Counter(a["type"] for a in annotations)
+
+        print("\nAnnotation Types:")
+        for t, count in types.items():
+            print(f"• {t:<20} {count}")
+
+    # =====================================================
+    # HALLUCINATION CHECK
+    # =====================================================
+
+    unresolved = []
+
+    for ann in annotations:
+        if "quote" in ann and ann["quote"] not in essay:
+            unresolved.append(ann["quote"])
+
+    if annotations:
+        resolution_rate = 1 - (len(unresolved) / len(annotations))
+
+        print(f"\nQuote Resolution Rate: {resolution_rate:.2%}")
+
+        if unresolved:
+            print("\n⚠️ Possible hallucinated quotes:")
+            for q in unresolved[:5]:
+                print(f'• "{q}"')
+
+    # =====================================================
+    # SAMPLE ANNOTATIONS
+    # =====================================================
+
+    if annotations:
+
+        print("\n🧩 SAMPLE ANNOTATIONS")
+        print("-" * 80)
+
+        for ann in annotations[:5]:
+
+            print(f'\nQuote      : "{ann.get("quote", "")}"')
+            print(f'Type       : {ann.get("type")}')
+            print(f'Severity   : {ann.get("severity")}')
+            print(f'Issue      : {ann.get("message")}')
+
+            suggestions = ann.get("suggestions", [])
+            if suggestions:
+                print(f'Suggestion : {suggestions[0]}')
+
+    print("\n" + "=" * 80)
+    print("END OF REPORT")
+    print("=" * 80 + "\n")

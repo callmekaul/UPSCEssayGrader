@@ -41,7 +41,6 @@ Average: Broadly related but somewhat generic. The essay could fit multiple simi
 Poor: Weak, superficial, or minimal connection to the topic. Large portions drift away from the prompt, or the response could easily belong to a different question.
 """
 
-
     ),
 
     Criterion(

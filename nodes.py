@@ -1,7 +1,8 @@
 from criteria_registry import Criterion, CRITERIA
 from schemas import EssayState
+from schemas import GrammarEvaluation
 from utils import count_words, extract_paragraphs, normalize_text
-from models import model, structured_model
+from models import structured_model, grammar_model, overall_model
 
 def metadata_node(state: EssayState):
 
@@ -51,7 +52,6 @@ Essay metadata:
 - Paragraph count: {meta['paragraph_count']}
 - Average paragraph length: {meta['avg_paragraph_words']} words
 
-
 Evaluation Guidelines:
 
 - Choose ONE rating only from:
@@ -68,16 +68,6 @@ Feedback Requirements:
 
 - Write concise examiner-style feedback (2-3 sentences).
 - Explicitly justify why the essay belongs in this rating instead of the rating above it.
-
-Strength / Weakness Requirements:
-
-- No Strength if rating is Poor.
-- No Weakness if rating is Excellent.
-- At least 2 Strengths for Good or Excellent ratings.
-- At least 2 Weaknesses for Average or Poor ratings.
-- Each point must reference a specific observable trait in the essay.
-- Avoid generic phrases like "good analysis."
-- Weaknesses must have a corrective actionable advice.
 
 
 Essay Topic:
@@ -98,6 +88,88 @@ Essay:
 
     return evaluator
 
+
+def grammar_node(state):
+
+    essay = state["essay"]
+
+    prompt = f"""
+You are a strict examiner evaluating grammar and language quality.
+
+Your task has TWO parts:
+
+1 Identify clear grammatical mistakes.
+2 Assign an overall rating using the rubric.
+
+-------------------------
+
+STRICT ANNOTATION RULES:
+
+- Quote the EXACT phrase from the essay.
+- DO NOT paraphrase.
+- DO NOT invent text.
+- Each quote MUST appear verbatim in the essay.
+- Keep quotes SHORT (3-12 words).
+- Only annotate high-confidence mistakes.
+
+If unsure → DO NOT annotate.
+
+Return AT MOST 8 annotations.
+
+Distribute annotations across the essay rather than focusing on one paragraph.
+
+-------------------------
+
+SEVERITY GUIDE:
+
+error → harms readability or correctness  
+warning → awkward but understandable  
+
+Ignore trivial punctuation unless it affects meaning.
+
+-------------------------
+
+RATING RULE:
+
+Frequent grammatical errors that disrupt readability MUST NOT be rated above Average.
+
+Minor mistakes that do not affect comprehension should not heavily penalize the score.
+
+Prioritize readability over perfection.
+
+-------------------------
+
+Essay:
+{essay}
+"""
+
+    response = grammar_model.invoke(prompt)
+
+    # Convert annotations into global format
+    annotations = []
+
+
+    for ann in response.annotations:
+
+        annotations.append({
+            "quote": ann.quote,
+            "type": "grammar",
+            "severity": ann.severity,
+            "message": ann.issue,
+            "suggestions": [ann.suggestion]
+        })
+
+    return {
+        "evaluations": {
+            "grammar": {
+                "rating": response.rating,
+                "feedback": response.feedback
+            }
+        },
+        "annotations": annotations
+    }
+
+
 def overall_evaluation(state: EssayState):
 
     evaluations = state["evaluations"]
@@ -112,10 +184,7 @@ def overall_evaluation(state: EssayState):
         evaluation_block += f"""
 {criterion.name}:
 Rating: {e.rating}
-Strengths: {e.strengths}
-Weaknesses: {e.weaknesses}
 Feedback: {e.feedback}
-
 """
 
     prompt = f"""
@@ -132,22 +201,36 @@ Essay Topic:
 Criterion-wise evaluation:
 {evaluation_block}
 
-Write a professional final assessment that:
+Write a professional final assessment
 
-- Synthesizes the major strengths.
-- Identifies the most critical weaknesses affecting the score.
-- Comments on essay-level qualities such as development, structure, and depth.
-- Avoids repeating criterion feedback verbatim.
-- Sounds like a real examiner — not an AI summary.
-- Remains concise but authoritative (120-180 words).
+Produce THREE outputs:
 
-Do NOT mention scoring mechanics.
-Do NOT list bullets.
-Write in cohesive paragraphs.
+1. Overall Strengths (3-5 points)
+   - Identify the most important essay-level qualities.
+   - Synthesize across criteria — do NOT repeat section feedback.
+   - Focus on structural or intellectual positives.
+
+2. Overall Weaknesses (3-5 points)
+   - Identify the issues that most constrained the essay's quality.
+   - Prioritize high-impact flaws over minor ones.
+   - Weaknesses must imply how the essay could be improved.
+
+3. Final Assessment (120-180 words)
+   - Write like a senior UPSC examiner.
+   - Be authoritative, precise, and unsentimental.
+   - Comment on development, coherence, depth, and maturity.
+   - Do NOT list bullets.
+   - Do NOT mention ratings or evaluation mechanics.
+   - Do NOT repeat earlier feedback verbatim.
+
+   
+Use easy to understand language suitable for Indian Students.
 """
 
-    overall_feedback = model.invoke(prompt).content
+    overall_result = overall_model.invoke(prompt)
 
     return {
-        "overall": overall_feedback,
+    "overall": overall_result.final_assessment,
+    "strengths": overall_result.overall_strengths,
+    "weaknesses": overall_result.overall_weaknesses,
     }

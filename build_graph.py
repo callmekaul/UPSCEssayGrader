@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 from schemas import EssayState
 from criteria_registry import CRITERIA
-from nodes import metadata_node, build_evaluator, overall_evaluation
+from nodes import metadata_node, build_evaluator, grammar_node, overall_evaluation
 
 
 def build_evaluation_graph():
@@ -17,7 +17,8 @@ def build_evaluation_graph():
             build_evaluator(criterion)
         )
 
-    # ---------- Add calibration and overall node ----------
+    # ---------- Add grammar and overall node ----------
+    graph.add_node("grammar_node", grammar_node)
     graph.add_node("overall_evaluation", overall_evaluation)
 
     # ---------- START → metadata ----------
@@ -27,11 +28,12 @@ def build_evaluation_graph():
     for criterion in CRITERIA:
         graph.add_edge("metadata", criterion.key)
 
-    # ---------- all evaluators → calibration ----------
+    # ---------- all evaluators → grammar_node ----------
     for criterion in CRITERIA:
-        graph.add_edge(criterion.key, "overall_evaluation")
+        graph.add_edge(criterion.key, "grammar_node")
 
-    # ---------- overall → END ----------
+    # ---------- grammar_node → overall_evaluation → END ----------
+    graph.add_edge("grammar_node", "overall_evaluation")
     graph.add_edge("overall_evaluation", END)
 
     return graph.compile()
