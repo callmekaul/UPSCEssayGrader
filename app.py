@@ -104,7 +104,18 @@ else:
 
         essay_text = st.session_state.essay
 
-        raw_annotations = result.get("annotations", [])
+        # Collect annotations from all evaluations
+        raw_annotations = []
+        for criterion_key, evaluation in result["evaluations"].items():
+            if hasattr(evaluation, "annotations") and evaluation.annotations:
+                for ann in evaluation.annotations:
+                    raw_annotations.append({
+                        "quote": ann.quote,
+                        "type": criterion_key,
+                        "severity": ann.severity,
+                        "message": ann.issue,
+                        "suggestions": [ann.suggestion]
+                    })
 
         resolved_annotations = resolve_annotations(
             essay_text,

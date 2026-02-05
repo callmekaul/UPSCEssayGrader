@@ -1,8 +1,7 @@
 from criteria_registry import Criterion, CRITERIA
 from schemas import EssayState
-from schemas import GrammarEvaluation
 from utils import count_words, extract_paragraphs, normalize_text
-from models import structured_model, grammar_model, overall_model
+from models import structured_model, overall_model
 
 def metadata_node(state: EssayState):
 
@@ -82,8 +81,7 @@ Essay:
         return {
             "evaluations": {
                 key: response
-            },
-            "ratings": [response.rating]
+            }
         }
 
     return evaluator
@@ -114,8 +112,6 @@ STRICT ANNOTATION RULES:
 
 If unsure → DO NOT annotate.
 
-Return AT MOST 8 annotations.
-
 Distribute annotations across the essay rather than focusing on one paragraph.
 
 -------------------------
@@ -143,30 +139,12 @@ Essay:
 {essay}
 """
 
-    response = grammar_model.invoke(prompt)
-
-    # Convert annotations into global format
-    annotations = []
-
-
-    for ann in response.annotations:
-
-        annotations.append({
-            "quote": ann.quote,
-            "type": "grammar",
-            "severity": ann.severity,
-            "message": ann.issue,
-            "suggestions": [ann.suggestion]
-        })
+    response = structured_model.invoke(prompt)
 
     return {
         "evaluations": {
-            "grammar": {
-                "rating": response.rating,
-                "feedback": response.feedback
-            }
-        },
-        "annotations": annotations
+            "grammar": response
+        }
     }
 
 

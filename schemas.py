@@ -2,6 +2,18 @@ from pydantic import BaseModel, Field
 from typing import Literal, TypedDict, Annotated
 
 
+class Annotation(BaseModel):
+    quote: str = Field(
+        description="MUST be 3-15 words maximum. The exact phrase from the essay. Do NOT paraphrase or expand."
+    )
+    issue: str = Field(
+        description="Concise identification of the problem. Be direct and specific."
+    )
+    suggestion: str = Field(
+        description="1-2 sentences maximum. A concise suggestion or alternative phrasing that fixes the issue."
+    )
+    severity: Literal["error", "warning"]
+
 class EvaluationSchema(BaseModel):
     rating: Literal["Excellent", "Good", "Average", "Poor"] = Field(
         description="Overall rating for this criterion based strictly on the rubric."
@@ -10,17 +22,9 @@ class EvaluationSchema(BaseModel):
     feedback: str = Field(
         description="2-3 sentence examiner-style summary explaining the evaluation."
     )
-
-class GrammarAnnotation(BaseModel):
-    quote: str
-    issue: str
-    suggestion: str
-    severity: Literal["error", "warning"]
-
-class GrammarEvaluation(BaseModel):
-    rating: Literal["Excellent", "Good", "Average", "Poor"]
-    feedback: str
-    annotations: list[GrammarAnnotation]
+    annotations: list[Annotation] = Field(
+        description="List of specific issues identified in the essay related to this criterion."
+    )
 
 class EssayMetadata(TypedDict):
     word_count: int
@@ -49,4 +53,3 @@ class EssayState(TypedDict):
     strengths: list[str]
     weaknesses: list[str]
     overall: str
-    annotations: list[dict]

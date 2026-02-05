@@ -34,9 +34,22 @@ def resolve_annotations(text, annotations):
         if start == -1:
             continue  # discard hallucination safely
 
+        end = start + len(quote)
+        span_key = (start, end)
+        
+        # Check for overlaps with already-resolved annotations
+        has_overlap = False
+        for existing in resolved:
+            if not (end <= existing["start"] or start >= existing["end"]):
+                has_overlap = True
+                break
+        
+        if has_overlap:
+            continue  # Skip overlapping annotations
+        
         resolved.append({
             "start": start,
-            "end": start + len(quote),
+            "end": end,
             **ann
         })
 
@@ -67,10 +80,10 @@ def render_annotated_essay(text, annotations):
         if not snippet.strip():
             continue
 
-        # Escape tooltip text safely
-        message = html.escape(ann.get("message", ""))
-        suggestions = ", ".join(ann.get("suggestions", []))
-        suggestions = html.escape(suggestions)
+        # Escape tooltip text and check for HTML already in snippet
+        message = html.escape(str(ann.get("message", "")))
+        suggestions_list = ann.get("suggestions", [])
+        suggestions = html.escape(", ".join(str(s) for s in suggestions_list))
 
         tooltip = message
         if suggestions:
@@ -92,6 +105,9 @@ def render_annotated_essay(text, annotations):
         else:
             bg = "#444"
             underline = "#aaa"
+        # Escape the snippet text to prevent HTML injection
+        safe_snippet = html.escape(snippet)
+        
 
         span = (
             f'<span '
@@ -103,7 +119,7 @@ def render_annotated_essay(text, annotations):
             f'border-radius:3px;'
             f'cursor:help;" '
             f'title="{tooltip}">'
-            f'{snippet}'
+            f'{safe_snippet}'
             f'</span>'
         )
 
