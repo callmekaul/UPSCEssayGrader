@@ -14,7 +14,7 @@ CRITERION_COLORS = {
     "language_clarity": {"bg": "#e65100", "underline": "#ff9800", "light": "#fff3e0"},        # Orange
     "argument_consistency": {"bg": "#00695c", "underline": "#26a69a", "light": "#e0f2f1"},    # Teal
     "conclusion_quality": {"bg": "#c2185b", "underline": "#ec407a", "light": "#fce4ec"},      # Pink
-    "grammar": {"bg": "#8b0000", "underline": "#ff4d4d", "light": "#fff3e0"},                  # Dark Red
+    "grammar": {"bg": "#8b0000", "underline": "#ff4d4d", "light": "#fff3e0"},                 # Dark Red
 }
 
 def get_criterion_color(criterion_key):
@@ -25,8 +25,8 @@ def merge_dicts(a, b):
     return {**a, **b}
 
 def normalize_text(text: str) -> str:
-    text = text.replace("\r\n", "\n")      # Windows → Unix
-    text = re.sub(r"\n{3,}", "\n\n", text) # collapse large gaps
+    text = text.replace("\r\n", "\n")
+    text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
 def extract_paragraphs(text: str) -> list[str]:
@@ -72,7 +72,7 @@ def resolve_annotations(text, annotations, allow_overlaps: bool = False):
                     break
 
             if has_overlap:
-                continue  # Skip overlapping annotations (default behavior)
+                continue  # Skip overlapping annotations
 
         resolved.append({
             "start": start,
@@ -90,7 +90,6 @@ def render_annotated_essay(text, annotations):
 
     html_text = text
 
-    # reverse order = offset safe
     annotations = sorted(
         annotations,
         key=lambda x: x["start"],
@@ -107,7 +106,6 @@ def render_annotated_essay(text, annotations):
         if not snippet.strip():
             continue
 
-        # Escape tooltip text and check for HTML already in snippet
         message = html.escape(str(ann.get("message", "")))
         suggestions_list = ann.get("suggestions", [])
         suggestions = html.escape(", ".join(str(s) for s in suggestions_list))
@@ -121,7 +119,6 @@ def render_annotated_essay(text, annotations):
         bg = color_scheme["bg"]
         underline = color_scheme["underline"]
         
-        # Escape the snippet text to prevent HTML injection
         safe_snippet = html.escape(snippet)
         
 
@@ -141,10 +138,11 @@ def render_annotated_essay(text, annotations):
 
         html_text = html_text[:start] + span + html_text[end:]
 
-    # Preserve paragraph structure
     return html_text.replace("\n", "<br>")
 
 def pretty_print(result: dict):
+
+    # FOR SEEING OUTPUT IN TERMINAL
 
     print("\n" + "=" * 80)
     print("📝 UPSC ESSAY EVALUATION REPORT")

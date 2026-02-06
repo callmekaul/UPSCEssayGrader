@@ -15,31 +15,37 @@ def build_evaluation_graph():
 
     graph = StateGraph(EssayState)
 
+    # ----------------------- GRAPH NODES -----------------------
+    
+    # PRE-EVALUATION NODES
     graph.add_node("metadata", metadata_node)
     graph.add_node("intro_conclusion", introConclusion_extractor)
 
-    # ---------- Add criterion nodes ----------
+    # EVALUATION CRITERIA NODES
     for criterion in CRITERIA:
         graph.add_node(
             criterion.key,
             build_evaluator(criterion)
         )
 
-    # ---------- Add overall evaluation node ----------
+    # OVERALL EVALUATION NODE
     graph.add_node("overall_evaluation", overall_evaluation)
 
-    # ---------- START → metadata ----------
+    # ----------------------- GRAPH EDGES -----------------------
+
+    # START > metadata > checkValidEssay ? intro_conclusion : END
     graph.add_edge(START, "metadata")
     graph.add_conditional_edges("metadata", checkValidEssay)
-    
-    # ---------- metadata → all evaluators ----------
+
+    # intro_conclusion > evaluators
     for criterion in CRITERIA:
         graph.add_edge("intro_conclusion", criterion.key)
 
-    # ---------- all evaluators → overall_evaluation → END ----------
+    # evaluators > overall_evaluation
     for criterion in CRITERIA:
         graph.add_edge(criterion.key, "overall_evaluation")
 
+    # overall_evaluation > END
     graph.add_edge("overall_evaluation", END)
 
     return graph.compile()

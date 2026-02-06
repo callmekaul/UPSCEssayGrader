@@ -124,6 +124,7 @@ else:
         # Resolve two ways:
         # - non-overlapping (default, safe for combined view)
         # - allow_overlaps (for per-criterion deep view)
+        
         resolved_nonoverlap = resolve_annotations(
             essay_text,
             raw_annotations,
