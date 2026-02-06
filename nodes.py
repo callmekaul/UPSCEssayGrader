@@ -63,14 +63,14 @@ def build_evaluator(criterion: Criterion):
         meta = state["metadata"]
 
         prompt = f"""
-You are a strict UPSC examiner evaluating an essay written under timed exam conditions.
+You are a STRICT UPSC examiner. Rate honestly — NOT generously.
 
 Criterion: {name}
 
 Focus:
 {instruction}
 
-Rating rubric:
+Rating Rubric:
 {rubric}
 
 Essay metadata:
@@ -78,23 +78,76 @@ Essay metadata:
 - Paragraph count: {meta['paragraph_count']}
 - Average paragraph length: {meta['avg_paragraph_words']} words
 
-Evaluation Guidelines:
+RATING CALIBRATION (Use these EXACT standards):
 
-- Choose ONE rating only from:
-  **Excellent, Good, Average, Poor**
+Excellent (RARE):
+- Essay demonstrates exceptional depth OR originality for this criterion
+- Few or NO weaknesses; work is demonstrably superior
+- Not the default for competent work
+- Examples: brilliant insight, seamless execution, standout examples
 
-- Do NOT hedge between ratings.
-- If uncertain, choose the lower rating.
-- Do not reward basic competence — reward clear distinction.
-- Evaluate relative to expectations from a full-length UPSC essay.
-- Strong paragraph-level writing must NOT be mistaken for essay-level quality.
-- High ratings require sustained development across the essay.
+Good (COMMON for decent work):
+- Solid execution with minor room for improvement
+- Competent but not exceptional
+- Meets UPSC standards well
+- Some sentences/ideas could be strengthened
+
+Average (COMMON for mediocre work):
+- Noticeable limitations or gaps
+- Work is functional but noticeably weaker than "Good"
+- Significant room for improvement
+- Ideas are present but underdeveloped OR poorly connected
+
+Poor (RARE, for serious issues):
+- Major weaknesses that undermine the criterion
+- Barely meets minimum standards or falls short
+- Serious logical, structural, or evidence issues
+
+EVALUATION PROCESS:
+
+Step 1: Read the ENTIRE essay. Find 2-3 specific quotes that show the essay's strength OR weakness on this criterion.
+
+Step 2: Compare the essay against the rubric. Which band does it genuinely fit?
+
+Step 3: Ask yourself: "Would a harsh but fair UPSC examiner rate this the same way?"
+
+Step 4: If your first instinct is "Good", PAUSE. Could it actually be Average (too many minor issues)? Could it be Excellent (unusual strength)? Or is Good genuinely right?
 
 Feedback Requirements:
 
-- Write concise examiner-style feedback (2-3 sentences).
-- Explicitly justify why the essay belongs in this rating instead of the rating above it.
+Write 2 sentences of simple, direct feedback:
+- Sentence 1: One concrete observation about what you see (e.g., "Your examples are too generic" or "Your argument flows logically")
+- Sentence 2: ONE specific way to improve (e.g., "Replace 'many historians' with an actual historian name and detail")
 
+Use simple English. Avoid jargon. Be direct. Make it actionable.
+
+ANNOTATION RULES (CRITICAL):
+
+Identify MAJOR issues. Focus on HIGH-IMPACT problems that directly relate to the rating.
+
+Annotation Requirements:
+- Quote: 3-15 words MAX, exact phrase from essay
+- Issue: 1 sentence, specific problem
+- Suggestion: 1 sentence, concrete fix
+- Severity: "error" (major) or "warning" (minor)
+
+DO NOT annotate:
+- Trivial details
+- Minor variations when meaning is clear
+- Redundant issues already highlighted
+
+Example of GOOD annotation:
+  Quote: "many scholars agree on this"
+  Issue: Generic reference lacks specificity
+  Suggestion: Name a specific scholar and cite their finding
+  Severity: warning
+
+Example of BAD annotation (too minor):
+  Quote: "moreover,"
+  Issue: Could use "furthermore" instead
+  Suggestion: Change to "furthermore"
+  Severity: warning
+  → SKIP THIS
 
 Essay Topic:
 {topic}
@@ -132,9 +185,9 @@ Feedback: {e.feedback}
 """
 
     prompt = f"""
-You are a senior UPSC examiner writing the final assessment of a candidate's essay.
+You are a SENIOR UPSC examiner writing the final assessment. Be consistent, precise, and authoritative.
 
-Essay metadata:
+Essay Metadata:
 - Word count: {metadata['word_count']}
 - Paragraphs: {metadata['paragraph_count']}
 - Avg paragraph length: {metadata['avg_paragraph_words']}
@@ -142,33 +195,36 @@ Essay metadata:
 Essay Topic:
 {state["topic"]}
 
-Criterion-wise evaluation:
+Criterion-wise Evaluation Summary:
 {evaluation_block}
 
-Write a professional final assessment
+TASK: Produce THREE outputs based ONLY on the evaluations above:
 
-Produce THREE outputs:
+1. **Overall Strengths** (3-5 bullet points)
+   - Extract the highest-rated criterion areas
+   - Synthesize into essay-level insights
+   - Example: "Strong use of historical examples to ground abstract arguments"
+   - Do NOT repeat generic praise
 
-1. Overall Strengths (3-5 points)
-   - Identify the most important essay-level qualities.
-   - Synthesize across criteria — do NOT repeat section feedback.
-   - Focus on structural or intellectual positives.
+2. **Overall Weaknesses** (3-5 bullet points)
+   - Focus on criteria that scored Average or Poor
+   - Be SPECIFIC: Reference the actual weakness patterns
+   - Make each weakness imply a concrete improvement
+   - Example: "Limited exploration of counterarguments weakens coherence"
+   - Do NOT be vague ("Could be better")
 
-2. Overall Weaknesses (3-5 points)
-   - Identify the issues that most constrained the essay's quality.
-   - Prioritize high-impact flaws over minor ones.
-   - Weaknesses must imply how the essay could be improved.
+3. **Final Assessment** (120-180 words)
+   - Write like a senior examiner reviewing a candidate's performance
+   - Reference specific strengths AND weaknesses from above
+   - Be authoritative and precise
+   - Avoid: ratings, mechanics, repetition of earlier feedback
+   - Use clear, direct language appropriate for Indian students
+   - Do NOT list bullets; write in prose
 
-3. Final Assessment (120-180 words)
-   - Write like a senior UPSC examiner.
-   - Be authoritative, precise, and unsentimental.
-   - Comment on development, coherence, depth, and maturity.
-   - Do NOT list bullets.
-   - Do NOT mention ratings or evaluation mechanics.
-   - Do NOT repeat earlier feedback verbatim.
-
-   
-Use easy to understand language suitable for Indian Students.
+CONSISTENCY RULE:
+Synthesize the criterion ratings into a coherent overall picture.
+If most ratings are "Average" or "Poor", the final assessment should reflect limited overall quality.
+Do NOT write an encouraging tone if scores don't support it.
 """
 
     overall_result = overall_model.invoke(prompt)

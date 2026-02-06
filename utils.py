@@ -65,10 +65,18 @@ def resolve_annotations(text, annotations, allow_overlaps: bool = False):
 
         if not allow_overlaps:
             # Check for overlaps with already-resolved annotations
+            # Prioritize by severity: errors before warnings
             has_overlap = False
             for existing in resolved:
                 if not (end <= existing["start"] or start >= existing["end"]):
                     has_overlap = True
+                    existing_severity = existing.get("severity", "warning")
+                    current_severity = ann.get("severity", "warning")
+                    
+                    # If current is higher severity (error > warning), replace existing
+                    if current_severity == "error" and existing_severity == "warning":
+                        resolved.remove(existing)
+                        has_overlap = False
                     break
 
             if has_overlap:

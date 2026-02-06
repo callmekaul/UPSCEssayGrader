@@ -19,7 +19,15 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📝 UPSC Essay Evaluator")
+st.markdown(
+    """
+    <div style='text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);'>
+        <h1 style='margin: 0; color: white; font-size: 48px; font-weight: 700;'>📝 UPSC Essay Evaluator</h1>
+        <p style='margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;'>AI-Powered Essay Analysis & Feedback</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # =====================================================
@@ -84,6 +92,11 @@ else:
     result = st.session_state.result
 
     # -------------------------------------------------
+    # ESSAY TITLE
+    # -------------------------------------------------
+    st.markdown(f"### {st.session_state.topic}")
+    
+    # -------------------------------------------------
     # FINAL REPORT
     # -------------------------------------------------
     st.subheader("🧠 Final Examiner Report")
@@ -125,7 +138,7 @@ else:
         # - non-overlapping (default, safe for combined view)
         # - allow_overlaps (for per-criterion deep view)
 
-        
+
         resolved_nonoverlap = resolve_annotations(
             essay_text,
             raw_annotations,

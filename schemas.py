@@ -45,6 +45,10 @@ class OverallEvaluationSchema(BaseModel):
         description="120-180 word senior examiner assessment."
     )
 
+    essay_score: int = Field(
+        description="Overall score out of 100. Independently assessed based on all criterion feedbacks, strengths, and weaknesses. Not a simple average of ratings."
+    )
+
 class EssayState(TypedDict):
     topic: str
     essay: str
