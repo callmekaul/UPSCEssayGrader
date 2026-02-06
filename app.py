@@ -35,6 +35,9 @@ if "essay" not in st.session_state:
 if "topic" not in st.session_state:
     st.session_state.topic = ""
 
+if "selected_criterion" not in st.session_state:
+    st.session_state.selected_criterion = None
+
 
 # =====================================================
 # INPUT VIEW
@@ -117,20 +120,47 @@ else:
                         "suggestions": [ann.suggestion]
                     })
 
-        resolved_annotations = resolve_annotations(
+        # Resolve two ways:
+        # - non-overlapping (default, safe for combined view)
+        # - allow_overlaps (for per-criterion deep view)
+        resolved_nonoverlap = resolve_annotations(
             essay_text,
-            raw_annotations
+            raw_annotations,
+            allow_overlaps=False
         )
 
-        # Hallucination tracking (VERY useful)
-        st.caption(
-            f"Resolved {len(resolved_annotations)} / {len(raw_annotations)} annotations"
+        resolved_all = resolve_annotations(
+            essay_text,
+            raw_annotations,
+            allow_overlaps=True
         )
 
-        annotated_html = render_annotated_essay(
-            essay_text,
-            resolved_annotations
-        )
+        # If a criterion is selected, render only that criterion's annotations
+        selected = st.session_state.get("selected_criterion")
+        if selected:
+            filtered_raw = [a for a in raw_annotations if a["type"] == selected]
+            resolved_selected = resolve_annotations(
+                essay_text,
+                filtered_raw,
+                allow_overlaps=True
+            )
+
+            st.caption(f"Viewing annotations for: {selected} — {len(resolved_selected)} / {len(filtered_raw)} resolved")
+
+            annotated_html = render_annotated_essay(
+                essay_text,
+                resolved_selected
+            )
+        else:
+            # Default combined view uses non-overlapping resolved annotations
+            st.caption(
+                f"Resolved {len(resolved_nonoverlap)} / {len(raw_annotations)} annotations (combined view)"
+            )
+
+            annotated_html = render_annotated_essay(
+                essay_text,
+                resolved_nonoverlap
+            )
 
         st.markdown(
             f"""
@@ -150,6 +180,11 @@ else:
     with feedback_col:
 
         st.subheader("Criterion Analysis")
+
+        # Quick control: reset to combined view
+        if st.button("Show all annotations", key="view_all"):
+            st.session_state.selected_criterion = None
+            st.rerun()
 
         for key, evaluation in result["evaluations"].items():
 
@@ -172,6 +207,11 @@ else:
                 unsafe_allow_html=True
             )
             st.caption(feedback)
+
+            # Button to view annotations for this criterion (per-criterion view)
+            if st.button("View annotations", key=f"view_{key}"):
+                st.session_state.selected_criterion = key
+                st.rerun()
 
             st.divider()
 

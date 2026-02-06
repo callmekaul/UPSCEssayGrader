@@ -138,7 +138,7 @@ RATING RULE:
 
 Frequent grammatical errors with "error" severity that disrupt readability MUST NOT be rated above Average.
 
-Minor mistakes with "warning" severity that do not affect comprehension should not heavily penalize the score.
+Minor mistakes severity that do not affect comprehension should not heavily penalize the score.
 
 Prioritize readability over perfection.
 

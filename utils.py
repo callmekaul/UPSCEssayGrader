@@ -36,7 +36,16 @@ def extract_paragraphs(text: str) -> list[str]:
 def count_words(text: str) -> int:
         return len(re.findall(r"\b\w+\b", text))
 
-def resolve_annotations(text, annotations):
+def resolve_annotations(text, annotations, allow_overlaps: bool = False):
+
+    """Resolve annotation quotes to character spans in `text`.
+
+    If `allow_overlaps` is False (default) this function preserves the
+    original behavior and skips annotations that overlap previously
+    resolved spans. If True, all matching quotes are returned even when
+    their spans overlap — useful for per-criterion views where we want
+    to retain more annotations instead of discarding collisions.
+    """
 
     resolved = []
 
@@ -53,18 +62,18 @@ def resolve_annotations(text, annotations):
             continue  # discard hallucination safely
 
         end = start + len(quote)
-        span_key = (start, end)
-        
-        # Check for overlaps with already-resolved annotations
-        has_overlap = False
-        for existing in resolved:
-            if not (end <= existing["start"] or start >= existing["end"]):
-                has_overlap = True
-                break
-        
-        if has_overlap:
-            continue  # Skip overlapping annotations
-        
+
+        if not allow_overlaps:
+            # Check for overlaps with already-resolved annotations
+            has_overlap = False
+            for existing in resolved:
+                if not (end <= existing["start"] or start >= existing["end"]):
+                    has_overlap = True
+                    break
+
+            if has_overlap:
+                continue  # Skip overlapping annotations (default behavior)
+
         resolved.append({
             "start": start,
             "end": end,
