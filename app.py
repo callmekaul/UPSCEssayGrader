@@ -6,7 +6,7 @@ load_dotenv()
 
 from build_graph import workflow
 from schemas import EssayState
-from utils import resolve_annotations, render_annotated_essay
+from utils import resolve_annotations, render_annotated_essay, get_criterion_color, CRITERION_COLORS
 
 
 # =====================================================
@@ -158,7 +158,19 @@ else:
             rating = getattr(evaluation, "rating", None) or (evaluation.get("rating") if isinstance(evaluation, dict) else None)
             feedback = getattr(evaluation, "feedback", None) or (evaluation.get("feedback") if isinstance(evaluation, dict) else "")
 
-            st.markdown(f"**{name} — {rating}**")
+            # Get criterion color
+            color_scheme = get_criterion_color(key)
+            color_hex = color_scheme["bg"]
+            
+            # Display criterion name with colored background
+            st.markdown(
+                f"""
+                <div style='background-color:{color_hex};color:white;padding:8px 12px;border-radius:4px;margin-bottom:8px;'>
+                    <strong style='font-size:16px;'>{name} — {rating}</strong>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             st.caption(feedback)
 
             st.divider()

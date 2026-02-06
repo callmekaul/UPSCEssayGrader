@@ -11,111 +11,263 @@ class Criterion:
 CRITERIA: tuple[Criterion, ...] = (
 
     Criterion(
-        key="topic_relevance",
-        name="Topic Relevance",
+        key="content_depth",
+        name="Content Depth & Analysis",
         instruction = """
-Evaluate whether the essay directly responds to the given topic.
+Evaluate the depth, analytical strength, and intellectual seriousness of the essay.
+
+Focus on whether ideas are DEVELOPED rather than merely mentioned.
+
+MANDATORY EVIDENCE RULE:
+You MUST support your evaluation with 2-4 direct quotes from the essay.
+Select short, high-signal excerpts that reveal the level of reasoning.
+
+Ask:
+- Are arguments explored with explanation and implications?
+- Does the essay move beyond obvious statements?
+- Is there evidence of critical thinking?
+
+IMPORTANT:
+Do not reward verbosity. Length is not depth.
+A long but shallow essay must score lower than a concise but analytical one.
+""",
+        rubric = """
+Excellent: Exceptionally analytical and intellectually mature. Arguments are explored in depth with clear reasoning and implications.
+
+Good: Demonstrates solid analysis with reasonably developed arguments, though some ideas could be pushed further.
+
+Average: Contains basic explanation but relies heavily on surface-level observations.
+
+Poor: Largely descriptive or generic with minimal reasoning.
+"""
+    ),
+
+    Criterion(
+        key="relevance_focus",
+        name="Relevance & Thematic Focus",
+        instruction = """
+Evaluate whether the essay remains tightly aligned with the topic.
 
 FIRST perform an Off-Topic Check:
 
 Ask:
-- Would a human examiner immediately recognize this as a response to the prompt?
-- Is the core subject of the essay the same as the topic?
+- Would a human UPSC examiner immediately recognize this as a response to the prompt?
+- Is the central thread consistently tied to the topic?
 
-If the essay primarily discusses a different subject, it is OFF-TOPIC.
+MANDATORY RULE:
+If the essay is primarily about a different subject, it MUST be rated Poor.
 
-IMPORTANT RULE:
-An off-topic essay MUST be rated Poor.
-Do NOT assign Average for partial philosophical overlap or abstract connections.
+MANDATORY EVIDENCE RULE:
+Provide direct quotes that demonstrate alignment OR drift.
 
-Topic relevance requires SUBJECT MATCH, not thematic creativity.
-Do not infer relevance unless it is explicit and central.
+Do NOT infer relevance from abstract philosophical language.
+Subject match is required.
 """,
         rubric = """
-Excellent: Directly and precisely answers the topic. The central theme is unmistakably aligned with the prompt, and nearly every major idea reinforces it.
+Excellent: Laser-focused on the topic. Nearly every major argument reinforces the central theme.
 
-Good: Clearly relevant to the topic. The essay demonstrates a solid understanding of the prompt, with only minor generalisation that does not weaken alignment.
+Good: Clearly relevant with only minor digressions.
 
-Average: Broadly related but somewhat generic. The essay could fit multiple similar topics with moderate changes, indicating partial but not sharp interpretation.
+Average: Broadly related but generic enough to fit multiple topics.
 
-Poor: Weak, superficial, or minimal connection to the topic. Large portions drift away from the prompt, or the response could easily belong to a different question.
+Poor: Weak alignment or substantially off-topic.
 """
-
     ),
 
     Criterion(
-        key="thought_depth",
-        name="Depth of Thought",
-        instruction="""
-Evaluate the intellectual maturity, analytical depth, and originality demonstrated across the essay.
-Reward sustained reasoning rather than isolated good points.
+        key="structure_coherence",
+        name="Structure & Coherence",
+        instruction = """
+Evaluate whether the response functions as a cohesive essay.
+
+Check for:
+- A purposeful introduction
+- Logical paragraph progression
+- Clear transitions
+- A synthesizing conclusion
+
+MANDATORY EVIDENCE RULE:
+Quote lines that show structural intent (e.g., framing statements, transitions, conclusions).
+
+IMPORTANT:
+Local paragraph clarity is NOT the same as essay-level coherence.
+An essay that reads like disconnected mini-articles should score lower.
 """,
         rubric = """
-Excellent: Demonstrates mature, nuanced, and sustained reasoning. Ideas are explored rather than merely stated, showing clear intellectual engagement.
+Excellent: Cohesive and logically architected with strong progression from introduction to conclusion.
 
-Good: Logical and clear analysis with some depth, though insights may be predictable rather than original.
+Good: Recognizable structure with mostly logical flow, though transitions may occasionally weaken.
 
-Average: Relies on straightforward or familiar arguments with limited exploration or analytical development.
+Average: Basic structure exists but progression feels uneven or mechanical.
 
-Poor: Superficial, repetitive, or largely descriptive thinking with little evidence of reasoning.
+Poor: Disjointed, poorly ordered, or missing major structural elements.
 """
-
-    ),
-
-    Criterion(
-        key="presentation",
-        name="Presentation & Structure",
-        instruction="""
-Evaluate whether the response functions as a well-structured essay.
-Check for introduction, logical body progression, paragraphing, coherence, and conclusion.
-Responses that do not resemble an essay should fall in the lowest bands regardless of language quality.
-Local paragraph coherence should not be mistaken for essay-level structure.
-""",
-        rubric = """
-Excellent: Functions as a cohesive essay with a clear introduction, logically ordered paragraphs, smooth progression of ideas, and a purposeful conclusion.
-
-Good: Well-organized overall with recognizable essay structure, though transitions or balance may occasionally falter.
-
-Average: Shows basic essay structure but development is uneven, with weak progression or limited paragraph control.
-
-Poor: Does not function as a proper essay — major structural elements are missing or ideas appear disjointed.
-"""
-
     ),
 
     Criterion(
         key="multidimensionality",
-        name="Multi-dimensional Coverage",
-        instruction="""
-Evaluate the breadth of perspectives explored in the essay.
-Reward meaningful integration of multiple dimensions rather than token mentions.
+        name="Multi-dimensional Thinking",
+        instruction = """
+Evaluate the breadth and integration of perspectives.
+
+High-scoring UPSC essays typically explore multiple dimensions such as:
+social, ethical, philosophical, political, economic, historical, or psychological.
+
+MANDATORY EVIDENCE RULE:
+Quote passages that demonstrate dimensional thinking.
+
+IMPORTANT:
+Token mentions do NOT count.
+A dimension must influence the argument to be credited.
 """,
         rubric = """
-Excellent: Integrates multiple relevant dimensions (e.g., social, ethical, philosophical, economic) in a natural and connected manner.
+Excellent: Seamlessly integrates multiple dimensions that deepen the analysis.
 
-Good: Covers several perspectives but with uneven emphasis or depth.
+Good: Covers several perspectives but with uneven development.
 
-Average: Demonstrates limited breadth and relies primarily on a single perspective.
+Average: Limited breadth; largely relies on one dominant lens.
 
-Poor: Extremely narrow response with little to no evidence of dimensional thinking.
+Poor: Extremely narrow with little evidence of layered thinking.
 """
-
     ),
 
     Criterion(
-        key="examples",
-        name="Examples & Evidence",
-        instruction="""
-Evaluate the specificity, relevance, and integration of examples used to support arguments throughout the essay.
+        key="originality_insight",
+        name="Originality & Insight",
+        instruction = """
+Evaluate the presence of independent thinking and fresh interpretation.
+
+Ask:
+- Does the essay avoid clichés?
+- Are familiar ideas reframed in a thoughtful way?
+- Does the writer demonstrate intellectual ownership?
+
+MANDATORY EVIDENCE RULE:
+Quote lines that reveal originality OR conventional thinking.
+
+IMPORTANT:
+Originality does NOT mean being contrarian.
+Reward thoughtful framing, not novelty for its own sake.
 """,
         rubric = """
-Excellent: Uses specific, relevant examples that are smoothly integrated and clearly strengthen the arguments.
+Excellent: Displays distinctive insight and thoughtful framing that elevates the essay.
 
-Good: Provides appropriate examples, though integration may occasionally feel mechanical or uneven.
+Good: Shows some independent thinking, though many ideas remain conventional.
 
-Average: Examples are generic, sparse, or not consistently connected to the argument.
+Average: Mostly predictable arguments with limited intellectual freshness.
 
-Poor: Lacks meaningful examples or relies on unsupported assertions.
+Poor: Derivative, cliché-driven, or formulaic.
 """
     ),
+
+    Criterion(
+        key="examples_evidence",
+        name="Examples & Substantiation",
+        instruction = """
+Evaluate the specificity, relevance, and argumentative role of examples.
+
+Examples should STRENGTHEN reasoning — not function as decorative additions.
+
+MANDATORY EVIDENCE RULE:
+Quote at least one example used by the writer and evaluate how effectively it supports the claim.
+
+IMPORTANT:
+Generic references (e.g., "history shows", "many leaders") should be treated as weak evidence.
+""",
+        rubric = """
+Excellent: Uses specific, relevant examples that are smoothly embedded into the argument.
+
+Good: Appropriate examples are present, though integration may occasionally feel mechanical.
+
+Average: Examples are generic, sparse, or weakly connected.
+
+Poor: Assertions are largely unsupported.
+"""
+    ),
+
+    Criterion(
+        key="language_clarity",
+        name="Language, Clarity & Expression",
+        instruction = """
+Evaluate readability, precision, and grammatical control.
+
+Focus on whether language ENABLES thought rather than obstructing it.
+
+MANDATORY EVIDENCE RULE:
+Quote lines that illustrate strengths OR problems in expression.
+
+IMPORTANT:
+Do NOT reward unnecessarily complex vocabulary.
+Clarity is superior to ornamentation.
+""",
+        rubric = """
+Excellent: Clear, precise, and fluent language with strong sentence control.
+
+Good: Generally clear with minor errors that do not hinder comprehension.
+
+Average: Noticeable language issues or awkward phrasing that occasionally disrupt flow.
+
+Poor: Frequent errors or unclear writing that obstructs understanding.
+"""
+    ),
+
+    Criterion(
+        key="argument_consistency",
+        name="Argument Consistency & Logical Integrity",
+        instruction = """
+Evaluate whether the essay maintains logical stability.
+
+Check for:
+- Internal contradictions
+- Sudden ideological shifts
+- Unsupported leaps in reasoning
+- Claims that do not follow from prior arguments
+
+MANDATORY EVIDENCE RULE:
+Quote lines that either demonstrate strong logical continuity OR reveal breaks.
+
+IMPORTANT:
+Sophisticated essays can acknowledge tension without becoming inconsistent.
+Do not confuse nuance with contradiction.
+""",
+        rubric = """
+Excellent: Logically consistent with tightly connected arguments.
+
+Good: Mostly coherent with minor reasoning gaps.
+
+Average: Several logical jumps or partially supported claims.
+
+Poor: Contradictory or unstable reasoning.
+"""
+    ),
+
+    Criterion(
+        key="conclusion_quality",
+        name="Conclusion Quality & Synthesis",
+        instruction = """
+Evaluate how effectively the essay closes.
+
+A strong UPSC conclusion should synthesize rather than summarize.
+
+Ask:
+- Does it elevate the discussion?
+- Does it provide direction, balance, or philosophical closure?
+
+MANDATORY EVIDENCE RULE:
+Quote the concluding lines and assess their effectiveness.
+
+IMPORTANT:
+Introducing brand-new arguments in the conclusion should be penalized.
+""",
+        rubric = """
+Excellent: Insightful synthesis that provides intellectual closure.
+
+Good: Solid ending that reinforces the essay's message.
+
+Average: Functional but predictable summary-style ending.
+
+Poor: Abrupt, underdeveloped, or missing conclusion.
+"""
+    ),
+
 )

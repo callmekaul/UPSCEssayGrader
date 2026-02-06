@@ -112,7 +112,16 @@ STRICT ANNOTATION RULES:
 
 If unsure → DO NOT annotate.
 
-Distribute annotations across the essay rather than focusing on one paragraph.
+DISTRIBUTION REQUIREMENT:
+
+You MUST distribute annotations across the ENTIRE essay length:
+- Scan the FIRST paragraphs for issues
+- Scan MIDDLE paragraphs for issues
+- CRITICALLY: Scan the FINAL paragraphs and conclusion for issues
+- Do NOT concentrate all annotations in early sections
+- Ensure coverage from start to finish
+
+If errors exist in later paragraphs, you MUST identify them.
 
 -------------------------
 
@@ -127,9 +136,9 @@ Ignore trivial punctuation unless it affects meaning.
 
 RATING RULE:
 
-Frequent grammatical errors that disrupt readability MUST NOT be rated above Average.
+Frequent grammatical errors with "error" severity that disrupt readability MUST NOT be rated above Average.
 
-Minor mistakes that do not affect comprehension should not heavily penalize the score.
+Minor mistakes with "warning" severity that do not affect comprehension should not heavily penalize the score.
 
 Prioritize readability over perfection.
 

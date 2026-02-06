@@ -3,6 +3,24 @@ from pydoc import html
 import re
 from criteria_registry import CRITERIA
 
+# Criterion color mapping for annotations and feedback panel
+CRITERION_COLORS = {
+    "content_depth": {"bg": "#1a5f7a", "underline": "#00bcd4", "light": "#e0f7fa"},           # Cyan
+    "relevance_focus": {"bg": "#6a1b9a", "underline": "#e040fb", "light": "#f3e5f5"},         # Purple
+    "structure_coherence": {"bg": "#1565c0", "underline": "#42a5f5", "light": "#e3f2fd"},     # Blue
+    "multidimensionality": {"bg": "#0b5394", "underline": "#64b5f6", "light": "#f1f8e9"},     # Light Blue
+    "originality_insight": {"bg": "#c62828", "underline": "#ef5350", "light": "#ffebee"},     # Red
+    "examples_evidence": {"bg": "#2e7d32", "underline": "#66bb6a", "light": "#e8f5e9"},       # Green
+    "language_clarity": {"bg": "#e65100", "underline": "#ff9800", "light": "#fff3e0"},        # Orange
+    "argument_consistency": {"bg": "#00695c", "underline": "#26a69a", "light": "#e0f2f1"},    # Teal
+    "conclusion_quality": {"bg": "#c2185b", "underline": "#ec407a", "light": "#fce4ec"},      # Pink
+    "grammar": {"bg": "#8b0000", "underline": "#ff4d4d", "light": "#fff3e0"},                  # Dark Red
+}
+
+def get_criterion_color(criterion_key):
+    """Get color for a criterion, fallback to neutral gray"""
+    return CRITERION_COLORS.get(criterion_key, {"bg": "#444", "underline": "#aaa", "light": "#f5f5f5"})
+
 def merge_dicts(a, b):
     return {**a, **b}
 
@@ -89,22 +107,11 @@ def render_annotated_essay(text, annotations):
         if suggestions:
             tooltip += f" | Suggestions: {suggestions}"
 
-        # Strong, visible colors for dark mode
-        if ann["type"] == "grammar":
-            bg = "#8b0000"      # dark red
-            underline = "#ff4d4d"
-
-        elif ann["type"] == "weak_argument":
-            bg = "#8b6f00"      # dark amber
-            underline = "#ffd54f"
-
-        elif ann["type"] == "strong_argument":
-            bg = "#0b5d1e"      # dark green
-            underline = "#4caf50"
-
-        else:
-            bg = "#444"
-            underline = "#aaa"
+        # Get criterion-specific colors
+        color_scheme = get_criterion_color(ann["type"])
+        bg = color_scheme["bg"]
+        underline = color_scheme["underline"]
+        
         # Escape the snippet text to prevent HTML injection
         safe_snippet = html.escape(snippet)
         
