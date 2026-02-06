@@ -270,4 +270,49 @@ Poor: Abrupt, underdeveloped, or missing conclusion.
 """
     ),
 
+    Criterion(
+        key="grammar",
+        name="Grammar, Language & Expression",
+        instruction = """
+Evaluate grammar, language quality, and clarity.
+
+Your task has TWO parts:
+1. Identify clear grammatical mistakes and language issues.
+2. Assign an overall rating using the rubric.
+
+STRICT ANNOTATION RULES:
+- Quote the EXACT phrase from the essay.
+- DO NOT paraphrase.
+- DO NOT invent text.
+- Each quote MUST appear verbatim in the essay.
+- Keep quotes SHORT (3-12 words).
+- Only annotate high-confidence mistakes.
+
+If unsure → DO NOT annotate.
+
+DISTRIBUTION REQUIREMENT:
+You MUST distribute annotations across the ENTIRE essay length:
+- Scan the FIRST paragraphs for issues
+- Scan MIDDLE paragraphs for issues
+- CRITICALLY: Scan the FINAL paragraphs and conclusion for issues
+- Do NOT concentrate all annotations in early sections
+- Ensure coverage from start to finish
+
+SEVERITY GUIDE:
+error → harms readability or correctness
+warning → awkward but understandable
+
+Ignore trivial punctuation unless it affects meaning.
+""",
+        rubric = """
+Excellent: Clear, precise, and fluent language with strong sentence control and minimal errors.
+
+Good: Generally clear with minor grammatical or stylistic errors that do not hinder comprehension.
+
+Average: Noticeable language issues or awkward phrasing that occasionally disrupt flow.
+
+Poor: Frequent grammatical errors that disrupt readability or understandability.
+"""
+    ),
+
 )
