@@ -62,7 +62,8 @@ if st.session_state.result is None:
 
             initial_state: EssayState = {
                 "topic": topic,
-                "essay": essay
+                "essay": essay,
+                "overall": "",
             }
 
             result = workflow.invoke(initial_state)

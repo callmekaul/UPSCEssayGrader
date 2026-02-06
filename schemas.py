@@ -34,7 +34,7 @@ class EssayMetadata(TypedDict):
 class OverallEvaluationSchema(BaseModel):
 
     overall_strengths: list[str] = Field(
-        description="3-5 major essay-level strengths from sections having higher than average rating. EMpty if none"
+        description="3-5 major essay-level strengths from sections having higher than average rating. Empty if none"
     )
 
     overall_weaknesses: list[str] = Field(
@@ -48,6 +48,8 @@ class OverallEvaluationSchema(BaseModel):
 class EssayState(TypedDict):
     topic: str
     essay: str
+    intro: str
+    conclusion: str
     metadata: EssayMetadata
     evaluations: Annotated[dict[str, EvaluationSchema], lambda a, b: {**a, **b}]
     strengths: list[str]

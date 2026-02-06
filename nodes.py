@@ -14,12 +14,39 @@ def metadata_node(state: EssayState):
     total_words = sum(word_counts)
     para_count = len(paragraphs)
 
-    return {
-        "metadata": {
-            "word_count": total_words,
-            "paragraph_count": para_count,
-            "avg_paragraph_words": round(total_words / max(para_count, 1), 1),
+    if total_words < 700:
+        return {
+            "overall": "Essay is too short for meaningful evaluation. UPSC essays typically require around 1000-1200 words. Please expand your essay to meet the expected length." ,
+            "strengths": [],
+            "weaknesses": []
         }
+    elif total_words > 2000:
+        return {
+            "overall": "Essay exceeds typical length for UPSC exams. Aim for around 1000-1200 words. Consider condensing your essay to focus on the most relevant points and improve clarity." ,
+            "strengths": [],
+            "weaknesses": []
+        }
+    else:
+        return {
+            "metadata": {
+                "word_count": total_words,
+                "paragraph_count": para_count,
+                "avg_paragraph_words": round(total_words / max(para_count, 1), 1),
+            }
+        }
+
+def introConclusion_extractor(state: EssayState):
+
+    text = normalize_text(state["essay"])
+
+    paragraphs = extract_paragraphs(text)
+
+    intro = paragraphs[0] if paragraphs else ""
+    conclusion = paragraphs[-1] if len(paragraphs) > 1 else ""
+
+    return {
+        "intro": intro,
+        "conclusion": conclusion
     }
 
 def build_evaluator(criterion: Criterion):
