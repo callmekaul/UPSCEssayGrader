@@ -59,3 +59,4 @@ class EssayState(TypedDict):
     strengths: list[str]
     weaknesses: list[str]
     overall: str
+    score: int

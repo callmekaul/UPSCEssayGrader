@@ -101,6 +101,53 @@ else:
     # -------------------------------------------------
     st.subheader("🧠 Final Examiner Report")
     
+    # Display score in a circular visual
+    score = result.get("score", 0)
+    
+    # Determine color based on score
+    if score >= 90:
+        color = "#28a745"  # Green
+    elif score >= 80:
+        color = "#17a2b8"  # Cyan
+    elif score >= 70:
+        color = "#ffc107"  # Yellow
+    elif score >= 60:
+        color = "#fd7e14"  # Orange
+    else:
+        color = "#dc3545"  # Red
+    
+    # Create circular score display
+    circle_html = f"""
+    <div style='display: flex; justify-content: center; align-items: center; margin: 20px 0;'>
+        <div style='
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient({color} 0deg {score * 3.6}deg, #e9ecef {score * 3.6}deg 360deg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        '>
+            <div style='
+                width: 140px;
+                height: 140px;
+                border-radius: 50%;
+                background: white;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+            '>
+                <div style='font-size: 48px; font-weight: 700; color: {color};'>{score}</div>
+                <div style='font-size: 12px; color: #666;'>out of 100</div>
+            </div>
+        </div>
+    </div>
+    """
+    
+    st.markdown(circle_html, unsafe_allow_html=True)
+    
     st.info(result["overall"])
 
     st.divider()

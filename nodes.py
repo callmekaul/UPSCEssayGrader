@@ -198,7 +198,7 @@ Essay Topic:
 Criterion-wise Evaluation Summary:
 {evaluation_block}
 
-TASK: Produce THREE outputs based ONLY on the evaluations above:
+TASK: Produce FOUR outputs based ONLY on the evaluations above:
 
 1. **Overall Strengths** (3-5 bullet points)
    - Extract the highest-rated criterion areas
@@ -221,6 +221,20 @@ TASK: Produce THREE outputs based ONLY on the evaluations above:
    - Use clear, direct language appropriate for Indian students
    - Do NOT list bullets; write in prose
 
+4. **Essay Score** (integer 0-100)
+   - Calculate INDEPENDENTLY based on the criterion evaluations, strengths, and weaknesses
+   - This is NOT a simple average or sum of ratings
+   - Use your holistic judgment: How would this essay perform in a real UPSC exam?
+   - Guidelines:
+     * 90-100: Exceptional (mostly Excellent ratings, brilliant execution)
+     * 80-89: Very Good (mostly Good/Excellent, minor weaknesses)
+     * 70-79: Good (mixed Good/Average, manageable issues)
+     * 60-69: Average (significant weaknesses, several Average ratings)
+     * 50-59: Below Average (many Average/Poor ratings, major issues)
+     * Below 50: Poor (predominantly Poor ratings, serious flaws)
+   - Consider the IMPACT of weaknesses on overall quality
+   - Consider the DEPTH and CONSISTENCY of strengths
+
 CONSISTENCY RULE:
 Synthesize the criterion ratings into a coherent overall picture.
 If most ratings are "Average" or "Poor", the final assessment should reflect limited overall quality.
@@ -233,4 +247,5 @@ Do NOT write an encouraging tone if scores don't support it.
     "overall": overall_result.final_assessment,
     "strengths": overall_result.overall_strengths,
     "weaknesses": overall_result.overall_weaknesses,
+    "score": overall_result.essay_score,
     }

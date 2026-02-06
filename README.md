@@ -124,12 +124,13 @@ The evaluator assesses essays based on multiple criteria registered in the `crit
 
 The evaluation includes:
 
-1. **Overall Examiner Report**: A 120-180 word senior examiner assessment
-2. **Essay-Level Strengths**: 3-5 major strengths identified
-3. **Essay-Level Weaknesses**: 3-5 major weaknesses identified
-4. **Criterion-Specific Feedback**: For each evaluation criterion:
+1. **Overall Score**: An independent 0-100 score based on holistic assessment of all criteria, strengths, and weaknesses
+2. **Overall Examiner Report**: A 120-180 word senior examiner assessment
+3. **Essay-Level Strengths**: 3-5 major strengths identified
+4. **Essay-Level Weaknesses**: 3-5 major weaknesses identified
+5. **Criterion-Specific Feedback**: For each evaluation criterion:
    - Rating (Excellent, Good, Average, Poor)
-   - 2-3 sentence examiner feedback
+   - 2 sentence examiner feedback
    - Annotated issues with suggestions
 
 ## Configuration
