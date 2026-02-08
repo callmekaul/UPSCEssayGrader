@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}UPSC Essay Evaluator{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% if adsense_client_id %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_client_id }}"
+         crossorigin="anonymous"></script>
+    {% endif %}
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <header class="hero-banner">
+        <h1>UPSC Essay Evaluator</h1>
+        <p class="subtitle">AI-Powered Essay Analysis &amp; Feedback</p>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>Essays are processed by a third-party AI provider (OpenAI). Do not submit confidential or sensitive information.</p>
+    </footer>
+
+    {% include "_donation_modal.html" %}
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

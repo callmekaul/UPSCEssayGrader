@@ -1,0 +1,12 @@
+{% set color = '#dc3545' %}
+{% if score >= 90 %}{% set color = '#28a745' %}
+{% elif score >= 80 %}{% set color = '#17a2b8' %}
+{% elif score >= 70 %}{% set color = '#ffc107' %}
+{% elif score >= 60 %}{% set color = '#fd7e14' %}{% endif %}
+
+<div class="score-circle" style="background: conic-gradient({{ color }} 0deg {{ score * 3.6 }}deg, #e9ecef {{ score * 3.6 }}deg 360deg);">
+    <div class="score-inner">
+        <span class="score-number" style="color: {{ color }};">{{ score }}</span>
+        <span class="score-label">out of 100</span>
+    </div>
+</div>

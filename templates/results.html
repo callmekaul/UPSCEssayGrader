@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Results - {{ topic }} - UPSC Essay Evaluator{% endblock %}
+
+{% block content %}
+<h2 class="topic-title">{{ topic }}</h2>
+
+{% if adsense_client_id %}
+<div class="ad-slot">
+    <ins class="adsbygoogle" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{% endif %}
+
+<section class="examiner-report">
+    <h3>Final Examiner Report</h3>
+    {% include "_score_circle.html" %}
+    <div class="overall-text">{{ overall }}</div>
+</section>
+
+<hr>
+
+<div class="two-column">
+    <div class="essay-panel">
+        <h3>Your Essay</h3>
+        {% if filter_label %}
+        <p class="caption">Viewing: <strong>{{ filter_label.replace("_", " ").title() }}</strong> &mdash; {{ resolved_count }} annotations</p>
+        {% else %}
+        <p class="caption">Resolved {{ resolved_count }} / {{ total_annotations }} annotations (combined view)</p>
+        {% endif %}
+        <div class="annotated-essay">{{ annotated_html|safe }}</div>
+    </div>
+
+    <div class="feedback-panel">
+        <h3>Criterion Analysis</h3>
+        <a href="/results/{{ task_id }}" class="btn btn-small">Show all annotations</a>
+
+        {% for c in criteria_data %}
+        {% include "_criterion_card.html" %}
+        {% endfor %}
+
+        <h4>Overall Strengths</h4>
+        <ul>{% for s in strengths %}<li>{{ s }}</li>{% endfor %}</ul>
+
+        <h4>Overall Weaknesses</h4>
+        <ul>{% for w in weaknesses %}<li>{{ w }}</li>{% endfor %}</ul>
+    </div>
+</div>
+
+{% if adsense_client_id %}
+<div class="ad-slot">
+    <ins class="adsbygoogle" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{% endif %}
+
+<hr>
+
+<div class="btn-row">
+    <a href="/" class="btn btn-primary">Evaluate Another Essay</a>
+    <button type="button" class="btn btn-donate" onclick="openDonationModal()">Donate &#10084;</button>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+<div id="donation-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeDonationModal()"></div>
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeDonationModal()">&times;</button>
+        <h3>Support This Project</h3>
+        <p>If you found this tool helpful, consider supporting its development!</p>
+
+        <div class="amount-buttons">
+            <button class="amount-btn active" data-amount="50">&#8377;50</button>
+            <button class="amount-btn" data-amount="100">&#8377;100</button>
+            <button class="amount-btn" data-amount="500">&#8377;500</button>
+            <button class="amount-btn" data-amount="0">Custom</button>
+        </div>
+
+        <div class="qr-container">
+            <img id="qr-image" src="" alt="UPI QR Code" width="220">
+            <p id="qr-caption">Scan with any UPI app</p>
+        </div>
+
+        <a id="upi-link" href="#" class="btn btn-gradient" target="_blank">&#8377; Open UPI App</a>
+    </div>
+</div>

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluating... - UPSC Essay Evaluator{% endblock %}
+
+{% block content %}
+<div class="loading-container">
+    <div id="ad-phase" class="loading-phase">
+        <h2>Your essay is being evaluated...</h2>
+        <div class="spinner"></div>
+        <p class="loading-tip">This typically takes 15-30 seconds</p>
+
+        {% if adsense_client_id %}
+        <div class="interstitial-ad">
+            <ins class="adsbygoogle" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        </div>
+        {% endif %}
+
+        <p class="ad-timer">Results ready in <span id="countdown">15</span>s...</p>
+    </div>
+
+    <div id="waiting-phase" class="loading-phase hidden">
+        <h2>Almost there...</h2>
+        <div class="spinner"></div>
+        <p>AI is still analyzing your essay. Hang tight!</p>
+    </div>
+
+    <div id="error-phase" class="loading-phase hidden">
+        <h2>Something went wrong</h2>
+        <p id="error-msg"></p>
+        <a href="/" class="btn btn-primary">Try Again</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>startPolling("{{ task_id }}");</script>
+{% endblock %}

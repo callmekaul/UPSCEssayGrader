@@ -1,0 +1,7 @@
+<div class="criterion-card">
+    <div class="criterion-header" style="background-color: {{ c.color.bg }};">
+        <strong>{{ c.name }} &mdash; {{ c.rating }}</strong>
+    </div>
+    <p class="criterion-feedback">{{ c.feedback }}</p>
+    <a href="/results/{{ task_id }}?criterion={{ c.key }}" class="btn btn-small btn-outline">View annotations</a>
+</div>

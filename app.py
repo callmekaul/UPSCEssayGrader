@@ -1,359 +1,197 @@
-import streamlit as st
+import os
+import uuid
+import base64
+import asyncio
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
-from collections import Counter
 
 load_dotenv()
 
 from build_graph import workflow
 from schemas import EssayState
-from utils import resolve_annotations, render_annotated_essay, get_criterion_color, CRITERION_COLORS
-from donation import show_donation_dialog
+from utils import resolve_annotations, render_annotated_essay, get_criterion_color
+from donation import build_upi_url, generate_qr_bytes
+
+# ---------------------------------------------------------------------------
+# In-memory task store
+# ---------------------------------------------------------------------------
+tasks: dict[str, dict] = {}
 
 
-# =====================================================
-# PAGE CONFIG
-# =====================================================
+async def _cleanup_expired_tasks():
+    while True:
+        await asyncio.sleep(300)
+        now = asyncio.get_event_loop().time()
+        expired = [k for k, v in tasks.items() if now - v["created_at"] > 1800]
+        for k in expired:
+            del tasks[k]
 
-st.set_page_config(
-    page_title="UPSC Essay Evaluator",
-    page_icon="📝",
-    layout="wide"
-)
 
-st.markdown(
-    """
-    <style>
-    button[kind="primary"] {
-        background-color: #111827 !important;
-        color: inherit !important;
-        border: 1px solid rgba(49, 51, 63, 0.2) !important;
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(_cleanup_expired_tasks())
+    yield
+    task.cancel()
+
+
+# ---------------------------------------------------------------------------
+# App setup
+# ---------------------------------------------------------------------------
+app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+ADSENSE_CLIENT_ID = os.getenv("ADSENSE_CLIENT_ID", "")
+templates.env.globals["adsense_client_id"] = ADSENSE_CLIENT_ID
+
+
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.post("/evaluate")
+async def evaluate(request: Request, topic: str = Form(...), essay: str = Form(...)):
+    if not topic.strip() or not essay.strip():
+        return templates.TemplateResponse("index.html", {
+            "request": request,
+            "error": "Please provide both topic and essay.",
+            "topic": topic,
+            "essay": essay,
+        })
+
+    task_id = str(uuid.uuid4())
+    tasks[task_id] = {
+        "status": "pending",
+        "topic": topic,
+        "essay": essay,
+        "result": None,
+        "created_at": asyncio.get_event_loop().time(),
     }
-    button[kind="primary"]:hover {
-        border-color: rgb(49, 51, 63) !important;
-        color: inherit !important;
-    }
-    button[kind="primary"] p { color: inherit !important; }
-    
-    button[kind="secondary"] {
-        background-color: #dbeafe !important;
-        color: #1e3a5f !important;
-        border: 1px solid #93c5fd !important;
-    }
-    button[kind="secondary"]:hover {
-        background-color: #bfdbfe !important;
-        border-color: #60a5fa !important;
-    }
-    button[kind="secondary"] p { color: #1e3a5f !important; }
 
-    /* Hide scrollbar */
-    * {
-        scrollbar-width: none !important;
-        -ms-overflow-style: none !important;
-    }
-    *::-webkit-scrollbar {
-        display: none !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, _run_evaluation, task_id)
 
-st.markdown(
-    """
-    <div style='text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);'>
-        <h1 style='margin: 0; color: white; font-size: 48px; font-weight: 700;'>📝 UPSC Essay Evaluator</h1>
-        <p style='margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;'>AI-Powered Essay Analysis & Feedback</p>
-        <p style='margin: 12px auto 0; color: rgba(255,255,255,0.7); font-size: 11px; max-width: 660px; line-height: 1.6;'>
-            Essays submitted to this platform are processed by a third-party AI provider (OpenAI). Content you submit may be used to improve AI systems, including for research and model training.<br>
-            Please do not submit confidential, proprietary, institutional, or sensitive personal information.<br>
-            By submitting an essay, you confirm you have the necessary rights and consent to share this content.
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    return RedirectResponse(f"/loading/{task_id}", status_code=303)
 
 
-# =====================================================
-# SESSION STATE
-# =====================================================
-
-if "result" not in st.session_state:
-    st.session_state.result = None
-
-if "essay" not in st.session_state:
-    st.session_state.essay = ""
-
-if "topic" not in st.session_state:
-    st.session_state.topic = ""
-
-if "selected_criterion" not in st.session_state:
-    st.session_state.selected_criterion = None
-
-
-# =====================================================
-# INPUT VIEW
-# =====================================================
-
-if st.session_state.result is None:
-
-    topic = st.text_input("Essay Topic")
-
-    essay = st.text_area(
-        "Paste your essay",
-        height=400
-    )
-
-    btn_col1, btn_col2 = st.columns([3, 1])
-    with btn_col1:
-        evaluate_clicked = st.button("Evaluate Essay", use_container_width=True, type="primary")
-    with btn_col2:
-        if st.button("Donate \u2764", use_container_width=True, type="secondary"):
-            show_donation_dialog()
-
-    if evaluate_clicked:
-
-        if not topic or not essay:
-            st.warning("Please provide both topic and essay.")
-            st.stop()
-
-        with st.spinner("Evaluating essay..."):
-
-            initial_state: EssayState = {
-                "topic": topic,
-                "essay": essay,
-                "overall": "",
-            }
-
-            result = workflow.invoke(initial_state)
-
-        st.session_state.result = result
-        st.session_state.topic = topic
-        st.session_state.essay = essay
-
-        st.rerun()
+def _run_evaluation(task_id: str):
+    task = tasks[task_id]
+    try:
+        initial_state: EssayState = {
+            "topic": task["topic"],
+            "essay": task["essay"],
+            "overall": "",
+        }
+        result = workflow.invoke(initial_state)
+        task["result"] = result
+        task["status"] = "done"
+    except Exception as e:
+        task["status"] = "error"
+        task["error_msg"] = str(e)
 
 
-# =====================================================
-# OUTPUT VIEW
-# =====================================================
+@app.get("/loading/{task_id}", response_class=HTMLResponse)
+async def loading(request: Request, task_id: str):
+    if task_id not in tasks:
+        return RedirectResponse("/")
+    if tasks[task_id]["status"] == "done":
+        return RedirectResponse(f"/results/{task_id}")
+    return templates.TemplateResponse("loading.html", {
+        "request": request,
+        "task_id": task_id,
+    })
 
-else:
 
-    result = st.session_state.result
+@app.get("/api/status/{task_id}")
+async def task_status(task_id: str):
+    if task_id not in tasks:
+        return JSONResponse({"status": "not_found"}, status_code=404)
+    task = tasks[task_id]
+    resp: dict = {"status": task["status"]}
+    if task["status"] == "done":
+        resp["redirect"] = f"/results/{task_id}"
+    elif task["status"] == "error":
+        resp["error"] = task.get("error_msg", "Unknown error")
+    return JSONResponse(resp)
 
-    # -------------------------------------------------
-    # ESSAY TITLE
-    # -------------------------------------------------
-    st.markdown(f"### {st.session_state.topic}")
-    
-    # -------------------------------------------------
-    # FINAL REPORT
-    # -------------------------------------------------
-    st.subheader("🧠 Final Examiner Report")
-    
-    # Display score in a circular visual
-    score = result.get("score", 0)
-    
-    # Determine color based on score
-    if score >= 90:
-        color = "#28a745"  # Green
-    elif score >= 80:
-        color = "#17a2b8"  # Cyan
-    elif score >= 70:
-        color = "#ffc107"  # Yellow
-    elif score >= 60:
-        color = "#fd7e14"  # Orange
+
+@app.get("/results/{task_id}", response_class=HTMLResponse)
+async def results(request: Request, task_id: str, criterion: str | None = None):
+    if task_id not in tasks or tasks[task_id]["status"] != "done":
+        return RedirectResponse("/")
+
+    task = tasks[task_id]
+    result = task["result"]
+    essay_text = task["essay"]
+
+    # Build raw annotations from all criteria
+    raw_annotations = []
+    for crit_key, evaluation in result.get("evaluations", {}).items():
+        annotations = getattr(evaluation, "annotations", None) or []
+        for ann in annotations:
+            raw_annotations.append({
+                "quote": ann.quote,
+                "paragraph_number": ann.paragraph_number,
+                "type": crit_key,
+                "severity": ann.severity,
+                "message": ann.issue,
+                "impact": ann.impact,
+                "suggestions": [ann.suggestion],
+            })
+
+    # Filter by criterion if requested
+    if criterion and criterion in result.get("evaluations", {}):
+        filtered = [a for a in raw_annotations if a["type"] == criterion]
+        resolved = resolve_annotations(essay_text, filtered, allow_overlaps=True)
+        filter_label = criterion
     else:
-        color = "#dc3545"  # Red
-    
-    # Create circular score display
-    circle_html = f"""
-    <div style='display: flex; justify-content: center; align-items: center; margin: 20px 0;'>
-        <div style='
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            background: conic-gradient({color} 0deg {score * 3.6}deg, #e9ecef {score * 3.6}deg 360deg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        '>
-            <div style='
-                width: 140px;
-                height: 140px;
-                border-radius: 50%;
-                background: white;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                flex-direction: column;
-            '>
-                <div style='font-size: 48px; font-weight: 700; color: {color};'>{score}</div>
-                <div style='font-size: 12px; color: #666;'>out of 100</div>
-            </div>
-        </div>
-    </div>
-    """
-    
-    st.markdown(circle_html, unsafe_allow_html=True)
-    
-    st.info(result["overall"])
+        resolved = resolve_annotations(essay_text, raw_annotations, allow_overlaps=False)
+        filter_label = None
 
-    st.divider()
+    annotated_html = render_annotated_essay(essay_text, resolved)
 
-    # =====================================================
-    # TWO COLUMN LAYOUT
-    # =====================================================
+    # Prepare criterion card data
+    criteria_data = []
+    for key, evaluation in result.get("evaluations", {}).items():
+        criteria_data.append({
+            "key": key,
+            "name": key.replace("_", " ").title(),
+            "rating": getattr(evaluation, "rating", ""),
+            "feedback": getattr(evaluation, "feedback", ""),
+            "color": get_criterion_color(key),
+        })
 
-    essay_col, feedback_col = st.columns([1.5, 1])
-
-    # -------------------------------------------------
-    # LEFT — ESSAY WITH ANNOTATIONS
-    # -------------------------------------------------
-
-    with essay_col:
-
-        st.subheader("Your Essay")
-
-        essay_text = st.session_state.essay
-
-        # Collect annotations from all evaluations
-        raw_annotations = []
-        for criterion_key, evaluation in result["evaluations"].items():
-            if hasattr(evaluation, "annotations") and evaluation.annotations:
-                for ann in evaluation.annotations:
-                    raw_annotations.append({
-                        "quote": ann.quote,
-                        "paragraph_number": ann.paragraph_number,
-                        "type": criterion_key,
-                        "severity": ann.severity,
-                        "message": ann.issue,
-                        "impact": ann.impact,
-                        "suggestions": [ann.suggestion]
-                    })
-
-        # Resolve two ways:
-        # - non-overlapping (default, safe for combined view)
-        # - allow_overlaps (for per-criterion deep view)
+    return templates.TemplateResponse("results.html", {
+        "request": request,
+        "task_id": task_id,
+        "topic": task["topic"],
+        "score": result.get("score", 0),
+        "overall": result.get("overall", ""),
+        "strengths": result.get("strengths", []),
+        "weaknesses": result.get("weaknesses", []),
+        "annotated_html": annotated_html,
+        "criteria_data": criteria_data,
+        "resolved_count": len(resolved),
+        "total_annotations": len(raw_annotations),
+        "filter_label": filter_label,
+    })
 
 
-        resolved_nonoverlap = resolve_annotations(
-            essay_text,
-            raw_annotations,
-            allow_overlaps=False
-        )
-
-        resolved_all = resolve_annotations(
-            essay_text,
-            raw_annotations,
-            allow_overlaps=True
-        )
-
-        # If a criterion is selected, render only that criterion's annotations
-        selected = st.session_state.get("selected_criterion")
-        if selected:
-            filtered_raw = [a for a in raw_annotations if a["type"] == selected]
-            resolved_selected = resolve_annotations(
-                essay_text,
-                filtered_raw,
-                allow_overlaps=True
-            )
-
-            st.caption(f"Viewing annotations for: {selected} — {len(resolved_selected)} / {len(filtered_raw)} resolved")
-
-            annotated_html = render_annotated_essay(
-                essay_text,
-                resolved_selected
-            )
-        else:
-            # Default combined view uses non-overlapping resolved annotations
-            st.caption(
-                f"Resolved {len(resolved_nonoverlap)} / {len(raw_annotations)} annotations (combined view)"
-            )
-
-            annotated_html = render_annotated_essay(
-                essay_text,
-                resolved_nonoverlap
-            )
-
-        st.markdown(
-            f"""
-            <div style='line-height:1.85;
-                        font-size:17px;
-                        padding-right:25px'>
-                {annotated_html}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    # -------------------------------------------------
-    # RIGHT — FEEDBACK PANEL
-    # -------------------------------------------------
-
-    with feedback_col:
-
-        st.subheader("Criterion Analysis")
-
-        # Quick control: reset to combined view
-        if st.button("Show all annotations", key="view_all"):
-            st.session_state.selected_criterion = None
-            st.rerun()
-
-        for key, evaluation in result["evaluations"].items():
-
-            name = key.replace("_", " ").title()
-
-            rating = getattr(evaluation, "rating", None) or (evaluation.get("rating") if isinstance(evaluation, dict) else None)
-            feedback = getattr(evaluation, "feedback", None) or (evaluation.get("feedback") if isinstance(evaluation, dict) else "")
-
-            # Get criterion color
-            color_scheme = get_criterion_color(key)
-            color_hex = color_scheme["bg"]
-            
-            # Display criterion name with colored background
-            st.markdown(
-                f"""
-                <div style='background-color:{color_hex};color:white;padding:8px 12px;border-radius:4px;margin-bottom:8px;'>
-                    <strong style='font-size:16px;'>{name} — {rating}</strong>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            st.caption(feedback)
-
-            # Button to view annotations for this criterion (per-criterion view)
-            if st.button("View annotations", key=f"view_{key}"):
-                st.session_state.selected_criterion = key
-                st.rerun()
-
-            st.divider()
-
-        st.markdown("### ✅ Overall Strengths")
-
-        for s in result["strengths"]:
-            st.write(f"- {s}")
-
-        st.markdown("### ⚠️ Overall Weaknesses")
-
-        for w in result["weaknesses"]:
-            st.write(f"- {w}")
-
-    st.divider()
-
-    btn_col1, btn_col2 = st.columns([3, 1])
-    with btn_col1:
-        reset_clicked = st.button("Evaluate Another Essay", use_container_width=True, type="primary")
-    with btn_col2:
-        if st.button("Donate \u2764", use_container_width=True, type="secondary", key="donate_output"):
-            show_donation_dialog()
-
-    if reset_clicked:
-
-        st.session_state.result = None
-        st.session_state.topic = ""
-        st.session_state.essay = ""
-
-        st.rerun()
+@app.get("/api/qr/{amount}")
+async def qr_code(amount: int):
+    upi_url = build_upi_url(amount if amount > 0 else None)
+    qr_bytes = generate_qr_bytes(upi_url)
+    b64 = base64.b64encode(qr_bytes).decode()
+    return JSONResponse({
+        "qr_data_url": f"data:image/png;base64,{b64}",
+        "upi_url": upi_url,
+    })
