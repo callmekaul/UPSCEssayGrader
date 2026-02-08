@@ -180,9 +180,11 @@ else:
                 for ann in evaluation.annotations:
                     raw_annotations.append({
                         "quote": ann.quote,
+                        "paragraph_number": ann.paragraph_number,
                         "type": criterion_key,
                         "severity": ann.severity,
                         "message": ann.issue,
+                        "impact": ann.impact,
                         "suggestions": [ann.suggestion]
                     })
 

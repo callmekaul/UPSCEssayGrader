@@ -49,6 +49,12 @@ def introConclusion_extractor(state: EssayState):
         "conclusion": conclusion
     }
 
+def _number_paragraphs(essay: str) -> str:
+    """Prepend [P1], [P2], ... to each paragraph for LLM paragraph referencing."""
+    paragraphs = extract_paragraphs(essay)
+    return "\n\n".join(f"[P{i}] {p}" for i, p in enumerate(paragraphs, 1))
+
+
 def build_evaluator(criterion: Criterion):
 
     key = criterion.key
@@ -61,6 +67,7 @@ def build_evaluator(criterion: Criterion):
         topic = state["topic"]
         essay = state["essay"]
         meta = state["metadata"]
+        numbered_essay = _number_paragraphs(essay)
 
         prompt = f"""
 You are a STRICT UPSC examiner. Rate honestly — NOT generously.
@@ -125,11 +132,13 @@ ANNOTATION RULES (CRITICAL):
 
 Identify MAJOR issues. Focus on HIGH-IMPACT problems that directly relate to the rating.
 
-Annotation Requirements:
-- Quote: 3-15 words MAX, exact phrase from essay
-- Issue: 1 sentence, specific problem
-- Suggestion: 1 sentence, concrete fix
-- Severity: "error" (major) or "warning" (minor)
+Each annotation MUST include ALL of these fields:
+- paragraph_number: The paragraph number (1-indexed) where the quote appears. Use the [P1], [P2] labels in the essay below.
+- quote: 3-15 words, copy-pasted EXACTLY from the essay (do NOT include the [P1] prefix)
+- issue: 1 sentence identifying the specific problem
+- impact: 1 sentence explaining WHY this hurts the essay's score or quality
+- suggestion: A concrete rewrite or specific replacement. Show EXACTLY what to write instead — not vague advice like "be more specific" or "consider adding examples"
+- severity: "error" (major, directly hurts the rating) or "warning" (minor, room for improvement)
 
 DO NOT annotate:
 - Trivial details
@@ -137,23 +146,24 @@ DO NOT annotate:
 - Redundant issues already highlighted
 
 Example of GOOD annotation:
-  Quote: "many scholars agree on this"
-  Issue: Generic reference lacks specificity
-  Suggestion: Name a specific scholar and cite their finding
-  Severity: warning
+  paragraph_number: 3
+  quote: "many scholars agree on this"
+  issue: Generic reference lacks specificity and credibility
+  impact: UPSC examiners expect evidence-backed claims; vague references weaken your argument
+  suggestion: Replace with "As Amartya Sen argues in his capability approach, development must prioritize..."
+  severity: warning
 
-Example of BAD annotation (too minor):
-  Quote: "moreover,"
-  Issue: Could use "furthermore" instead
-  Suggestion: Change to "furthermore"
-  Severity: warning
-  → SKIP THIS
+Example of BAD annotation (too vague):
+  quote: "the example shows"
+  issue: Could be more specific
+  suggestion: Consider being more specific
+  → SKIP — suggestion is not actionable
 
 Essay Topic:
 {topic}
 
-Essay:
-{essay}
+Essay (paragraphs numbered for reference — do NOT include [P#] tags in your quotes):
+{numbered_essay}
 """
 
         response = structured_model.invoke(prompt)

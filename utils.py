@@ -1,4 +1,5 @@
 from collections import Counter
+from difflib import SequenceMatcher
 from pydoc import html
 import re
 from criteria_registry import CRITERIA
@@ -36,9 +37,67 @@ def extract_paragraphs(text: str) -> list[str]:
 def count_words(text: str) -> int:
         return len(re.findall(r"\b\w+\b", text))
 
+def _find_quote_span(text, quote, paragraph_number=None):
+    """Multi-strategy quote matching: exact → case-insensitive → fuzzy.
+
+    Returns (start, end) or None if no match found.
+    """
+
+    # Strategy 1: exact match
+    start = text.find(quote)
+    if start != -1:
+        return start, start + len(quote)
+
+    # Strategy 2: case-insensitive match
+    text_lower = text.lower()
+    quote_lower = quote.lower()
+    start = text_lower.find(quote_lower)
+    if start != -1:
+        return start, start + len(quote)
+
+    # Strategy 3: fuzzy match (SequenceMatcher >= 0.85)
+    # If paragraph_number is provided, search that paragraph first
+    quote_len = len(quote)
+    window = int(quote_len * 1.3)  # allow slightly wider window
+    threshold = 0.85
+
+    search_regions = []
+    if paragraph_number is not None:
+        paragraphs = extract_paragraphs(text)
+        if 1 <= paragraph_number <= len(paragraphs):
+            target_para = paragraphs[paragraph_number - 1]
+            para_start = text.find(target_para)
+            if para_start != -1:
+                search_regions.append((para_start, para_start + len(target_para)))
+
+    # Fall back to full text
+    search_regions.append((0, len(text)))
+
+    best_ratio = 0
+    best_span = None
+
+    for region_start, region_end in search_regions:
+        for i in range(region_start, region_end - quote_len + 1):
+            candidate = text[i:i + window]
+            ratio = SequenceMatcher(None, quote_lower, candidate.lower()).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                # Use the candidate trimmed to quote length for the span
+                best_span = (i, i + len(candidate.rstrip()))
+        if best_ratio >= threshold:
+            break  # found a good match in this region, stop
+
+    if best_ratio >= threshold and best_span:
+        return best_span
+
+    return None
+
+
 def resolve_annotations(text, annotations, allow_overlaps: bool = False):
 
     """Resolve annotation quotes to character spans in `text`.
+
+    Uses multi-strategy matching (exact → case-insensitive → fuzzy).
 
     If `allow_overlaps` is False (default) this function preserves the
     original behavior and skips annotations that overlap previously
@@ -56,12 +115,14 @@ def resolve_annotations(text, annotations, allow_overlaps: bool = False):
         if not quote:
             continue
 
-        start = text.find(quote)
+        span = _find_quote_span(
+            text, quote, ann.get("paragraph_number")
+        )
 
-        if start == -1:
-            continue  # discard hallucination safely
+        if span is None:
+            continue  # discard unresolvable annotation safely
 
-        end = start + len(quote)
+        start, end = span
 
         if not allow_overlaps:
             # Check for overlaps with already-resolved annotations
@@ -72,7 +133,7 @@ def resolve_annotations(text, annotations, allow_overlaps: bool = False):
                     has_overlap = True
                     existing_severity = existing.get("severity", "warning")
                     current_severity = ann.get("severity", "warning")
-                    
+
                     # If current is higher severity (error > warning), replace existing
                     if current_severity == "error" and existing_severity == "warning":
                         resolved.remove(existing)
@@ -115,12 +176,15 @@ def render_annotated_essay(text, annotations):
             continue
 
         message = html.escape(str(ann.get("message", "")))
+        impact = html.escape(str(ann.get("impact", "")))
         suggestions_list = ann.get("suggestions", [])
         suggestions = html.escape(", ".join(str(s) for s in suggestions_list))
 
         tooltip = message
+        if impact:
+            tooltip += f" | Why it matters: {impact}"
         if suggestions:
-            tooltip += f" | Suggestions: {suggestions}"
+            tooltip += f" | Fix: {suggestions}"
 
         # Get criterion-specific colors
         color_scheme = get_criterion_color(ann["type"])

@@ -3,14 +3,20 @@ from typing import Literal, TypedDict, Annotated
 
 
 class Annotation(BaseModel):
+    paragraph_number: int = Field(
+        description="1-indexed paragraph number where this quote appears."
+    )
     quote: str = Field(
-        description="MUST be 3-15 words maximum. The exact phrase from the essay. Do NOT paraphrase or expand."
+        description="MUST be 5-25 words maximum. The exact phrase from the essay. Do NOT paraphrase or expand."
     )
     issue: str = Field(
         description="Concise identification of the problem. Be direct and specific."
     )
+    impact: str = Field(
+        description="1 sentence: why this issue weakens the essay or hurts the score."
+    )
     suggestion: str = Field(
-        description="1-2 sentences maximum. A concise suggestion or alternative phrasing that fixes the issue."
+        description="A concrete rewrite or specific fix. Show exactly what to change, not vague advice."
     )
     severity: Literal["error", "warning"]
 
