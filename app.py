@@ -7,6 +7,7 @@ load_dotenv()
 from build_graph import workflow
 from schemas import EssayState
 from utils import resolve_annotations, render_annotated_essay, get_criterion_color, CRITERION_COLORS
+from donation import show_donation_dialog
 
 
 # =====================================================
@@ -17,6 +18,44 @@ st.set_page_config(
     page_title="UPSC Essay Evaluator",
     page_icon="📝",
     layout="wide"
+)
+
+st.markdown(
+    """
+    <style>
+    button[kind="primary"] {
+        background-color: #111827 !important;
+        color: inherit !important;
+        border: 1px solid rgba(49, 51, 63, 0.2) !important;
+    }
+    button[kind="primary"]:hover {
+        border-color: rgb(49, 51, 63) !important;
+        color: inherit !important;
+    }
+    button[kind="primary"] p { color: inherit !important; }
+    
+    button[kind="secondary"] {
+        background-color: #dbeafe !important;
+        color: #1e3a5f !important;
+        border: 1px solid #93c5fd !important;
+    }
+    button[kind="secondary"]:hover {
+        background-color: #bfdbfe !important;
+        border-color: #60a5fa !important;
+    }
+    button[kind="secondary"] p { color: #1e3a5f !important; }
+
+    /* Hide scrollbar */
+    * {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    *::-webkit-scrollbar {
+        display: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 st.markdown(
@@ -65,7 +104,14 @@ if st.session_state.result is None:
         height=400
     )
 
-    if st.button("Evaluate Essay"):
+    btn_col1, btn_col2 = st.columns([3, 1])
+    with btn_col1:
+        evaluate_clicked = st.button("Evaluate Essay", use_container_width=True, type="primary")
+    with btn_col2:
+        if st.button("Donate \u2764", use_container_width=True, type="secondary"):
+            show_donation_dialog()
+
+    if evaluate_clicked:
 
         if not topic or not essay:
             st.warning("Please provide both topic and essay.")
@@ -297,7 +343,14 @@ else:
 
     st.divider()
 
-    if st.button("Evaluate Another Essay"):
+    btn_col1, btn_col2 = st.columns([3, 1])
+    with btn_col1:
+        reset_clicked = st.button("Evaluate Another Essay", use_container_width=True, type="primary")
+    with btn_col2:
+        if st.button("Donate \u2764", use_container_width=True, type="secondary", key="donate_output"):
+            show_donation_dialog()
+
+    if reset_clicked:
 
         st.session_state.result = None
         st.session_state.topic = ""
