@@ -24,6 +24,11 @@ st.markdown(
     <div style='text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; margin-bottom: 30px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);'>
         <h1 style='margin: 0; color: white; font-size: 48px; font-weight: 700;'>📝 UPSC Essay Evaluator</h1>
         <p style='margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;'>AI-Powered Essay Analysis & Feedback</p>
+        <p style='margin: 12px auto 0; color: rgba(255,255,255,0.7); font-size: 11px; max-width: 660px; line-height: 1.6;'>
+            Essays submitted to this platform are processed by a third-party AI provider (OpenAI). Content you submit may be used to improve AI systems, including for research and model training.<br>
+            Please do not submit confidential, proprietary, institutional, or sensitive personal information.<br>
+            By submitting an essay, you confirm you have the necessary rights and consent to share this content.
+        </p>
     </div>
     """,
     unsafe_allow_html=True
