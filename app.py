@@ -12,6 +12,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+_key = os.getenv("OPENAI_API_KEY", "")
+print(f"[startup] OPENAI_API_KEY present: {bool(_key)}, length: {len(_key)}")
+
 from build_graph import workflow
 from schemas import EssayState
 from utils import resolve_annotations, render_annotated_essay, get_criterion_color
